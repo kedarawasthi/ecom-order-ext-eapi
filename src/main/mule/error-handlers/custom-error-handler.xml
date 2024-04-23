@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<error-handler name="manual-dlq-redirect-error-handler" doc:id="a459d445-9d66-4375-ac4b-32e1d1aa8a64" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a1a30647-056d-49d3-bc44-0e37356e30e7" type="${http.error.retryable-errors}" >
+			<logger level="INFO" doc:name="Log error" doc:id="cdcfcd5c-44e0-4623-b3d5-9c777669e5a5" message="======== Error: #[error.description] | Details: #[error.detailedDescription] | ApproximateReceiveCount: #[attributes.ApproximateReceiveCount] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+			<choice doc:name="if aproximateReceiveCount crosses maxReceiveCount" doc:id="91e14a9e-dba7-4c1b-acec-93482bb6c1a2" >
+				<when expression="#[attributes.ApproximateReceiveCount &gt; 2]" >
+					<logger level="INFO" doc:name="sending message to dlq with error attributes" doc:id="16dddf66-c672-4853-807b-6635a541ed1c" message="======== maxReceiveCount reached | sending message to dlq with error attributes | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+					<flow-ref doc:name="Flow Reference to redirect-to-dlq-sub-flow" doc:id="8fbf278e-6fc9-4150-b282-fea0d03e24a9" name="redirect-to-dlq-sub-flow" />
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="extending visibility timeout to comply with backoff interval" doc:id="4c291d3d-2060-49f9-8c6c-59a166bd930a" message="=======  Extending visibility timeout to comply with backoff interval | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+					<sqs:change-message-visibility doc:name="Change message visibility" doc:id="a291c864-c2a7-4456-988a-3da6f1da051d" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" visibilityTimeout="40" queueUrl="#[vars.queueUrl]" />
+					<logger level="INFO" doc:name="visiblity timeout extended" doc:id="c81c4543-9def-4a89-9972-e45affbebce0" message="=======  Message Visiblity timeout extended by 40 seconds | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+				</otherwise>
+			</choice>
+		</on-error-propagate>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3fdd091d-6955-4cfd-903a-c3573de596c7" type="MULE:DUPLICATE_MESSAGE">
+			<logger level="INFO" doc:name="duplicate message, delete from queue without retry" doc:id="2377f2b2-d320-470c-b108-c0d3acded448" message='======== duplicate message, delete from queue without retry | MessageId: #[attributes."sqs.message.id"] | Error: #[error.description] | Details: [error.detailedDescription] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========' />
+			<ee:transform doc:name="set parameters" doc:id="f2992868-0627-4511-97cb-771ed105c59f" >
+				<ee:message />
+				<ee:variables >
+					<ee:set-variable variableName="receiptHandle" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.receiptHandle default attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+					<ee:set-variable variableName="queueUrl" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.queueUrl]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<sqs:delete-message doc:name="Delete message from src queue" doc:id="54853ff8-dc47-4b4b-a21b-71155266433a" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" queueUrl="#[vars.queueUrl]" target="deleteMessageResponse" />
+			<logger level="INFO" doc:name="message deleted from src queue" doc:id="7975aa45-1882-4319-9fed-ee50a0a5eb85" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		</on-error-continue>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f136d050-f956-43e1-b07a-93938b9a041d" type="ANY" >
+			<logger level="INFO" doc:name="non retryable error, redirect to dlq without retry" doc:id="63f7d091-6da0-4bb4-bb3e-a7cba87970c1" message="======== non retryable error, redirect to dlq without retry | Error: #[error.description] | Details: [error.detailedDescription] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+			<flow-ref doc:name="Flow Reference to redirect-to-dlq-sub-flow" doc:id="a155093d-a9db-4b4e-8cf1-102369bac911" name="redirect-to-dlq-sub-flow" />
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="redirect-to-dlq-sub-flow" doc:id="0e529cbf-e431-417d-a53e-b0c7f9165368" >
+		<ee:transform doc:name="set parameters" doc:id="bef95719-b897-4c3f-9eac-38f19e489194" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="dlqUrl" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.dlqUrl]]></ee:set-variable>
+				<ee:set-variable variableName="receiptHandle" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.receiptHandle default attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+				<ee:set-variable variableName="queueUrl" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.queueUrl]]></ee:set-variable>
+				<ee:set-variable variableName="dlqRequest" ><![CDATA[%dw 2.0
+output application/java
+var messageBody = write(payload,"application/json")
+---
+{
+	body: messageBody as String,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: null,
+	id: null,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": vars.flowContext.messageSchema.correlationId,
+			"dataType": "String.correlationId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": vars.flowContext.messageSchema.businessId,
+			"dataType": "String.businessId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": vars.flowContext.messageSchema.messageType,
+			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"errorType": {
+			"stringValue": error.errorType.asString,
+			"dataType": "String.errorType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"errorDescription": {
+			"stringValue": error.description ++ " , " ++ error.detailedDescription,
+			"dataType": "String.errorDescription"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<sqs:delete-message doc:name="Delete message from src queue" doc:id="8fb01f10-bcb6-4059-95ec-522a2c360684" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" queueUrl="#[vars.queueUrl]" target="deleteMessageResponse" />
+		<logger level="INFO" doc:name="message deleted from src queue" doc:id="65287845-cd1a-4b45-b392-9d195b30b659" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		<sqs:send-message doc:name="Send message to dlq" doc:id="6bba7b68-12b0-41b4-9805-6ef8bcf52318" config-ref="Amazon_SQS_Configuration" queueUrl="#[vars.dlqUrl]" target="sendMessageResponse" >
+			<sqs:message ><![CDATA[#[vars.dlqRequest]]]></sqs:message>
+		</sqs:send-message>
+		<ee:transform doc:name="sendMessageResponse" doc:id="9548002b-f4d8-4e45-a867-c1bdcacdad95" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="sendMessageResponse" ><![CDATA[%dw 2.0
+output application/json
+---
+vars.sendMessageResponse]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Message sent to dlq" doc:id="470774e5-d6f4-4081-9a90-02ee38417fc4" message="======= Message sent to dlq: #[vars.dlqUrl] | send-message response: #[vars.sendMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+	</sub-flow>
+	<error-handler name="auto-dlq-redirect-error-handler" doc:id="d4cda2c1-7c5d-4467-a215-5f48607720b8">
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="33e7be18-1de6-4182-90d0-b32b04aeb991" type="${http.error.retryable-errors}">
+			<logger level="INFO" doc:name="Log error" doc:id="4de56405-2a6c-48ec-aed3-44dcb60d07a1" message="======== Error: #[error.description] | Details: #[error.detailedDescription] | ApproximateReceiveCount: #[attributes.ApproximateReceiveCount] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+			<logger level="INFO" doc:name="extending visibility timeout to comply with backoff interval" doc:id="70c4043d-825e-4969-a868-f087215153c8" message="=======  Extending visibility timeout to comply with backoff interval | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+			<sqs:change-message-visibility doc:name="Change message visibility" doc:id="84e2979f-15f0-422c-abcb-975605d7b9d8" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" visibilityTimeout="40" queueUrl="#[vars.queueUrl]" />
+			<logger level="INFO" doc:name="visiblity timeout extended" doc:id="65a8df85-15ce-4e47-ba12-e7f918d9053a" message="=======  Message Visiblity timeout extended by 40 seconds | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="3fd382fe-c7ac-490f-9a56-225c1f2bb9e7" type="ANY">
+			<logger level="INFO" doc:name="non retryable error, log and delete without redirect to dlq" doc:id="9290da52-3d39-4a87-b9ab-74122803e6ce" message="======== non retryable error, log and delete without redirect to dlq | Error: #[error.description] | Details: [error.detailedDescription] | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+			<ee:transform doc:name="set parameters" doc:id="a9e1f016-d1e4-4684-9ca2-2fe45423700f">
+				<ee:message />
+				<ee:variables>
+					<ee:set-variable variableName="receiptHandle"><![CDATA[%dw 2.0
+output application/java
+---
+vars.receiptHandle default attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+					<ee:set-variable variableName="queueUrl"><![CDATA[%dw 2.0
+output application/java
+---
+vars.queueUrl]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<sqs:delete-message doc:name="Delete message from src queue" doc:id="14cc0586-50b4-4865-9b91-a22b2dfc9045" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" queueUrl="#[vars.queueUrl]" target="deleteMessageResponse" />
+			<logger level="INFO" doc:name="message deleted from src queue" doc:id="fc6de105-7fdd-41fc-9aea-deaf92d4e37d" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		</on-error-propagate>
+	</error-handler>
+</mule>

@@ -1,0 +1,19 @@
+[
+    {
+        "id": "fe61c0a0-d275-485c-a917-849e6bbce583",
+        "receiptHandle": "AQEBz6JOGjz4N53QSJ1C5r0P86UjF0JDpQuIc+lnqyVZDYSkTDYhblQt54PQlLd4pbQcqAHUbcbow/GO8hmoqR+rizRQ8DPJtpOsxG2dwUz7LcTfr/7PLTBEjwDmgwhm+Q2uvPVWOf2QnTwS+RvPI40/TgKEgHAGEcR9y77vQpTRWIlCN6brGBxV39c/fIgOlZidLvB3TJ+S0zkMVx2BeFZ23zoDkAEPLxLWhx13dp7YeiqNX0WdO7y55pESbyRyIFEf3Aq0o7OL5BCG3Oz09peVI+teGlHbn+0JBuzQpkDMRQLkm1lj1vON2vxzdhjT0bSxPOMFInQtX9p/NUEFwsdAZcSPwruVZ1xfzxjPWwxOCFm0MzfFYu4elWP2587TgEhCmRNDbrnWptCc39JQLAlYRqln0NoVADk8A1aSbwlipaI=",
+        "body": "This recent salesorder test message",
+        "delaySeconds": null,
+        "groupId": null,
+        "deduplicationId": null,
+        "messageAttributes": {
+            "messageType": {
+                "stringValue": "salesorder",
+                "dataType": "String.String.messageType",
+                "binaryValue": {
+                    "_b": null
+                }
+            }
+        }
+    }
+]

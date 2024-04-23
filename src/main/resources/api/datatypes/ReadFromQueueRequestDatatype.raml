@@ -1,0 +1,30 @@
+#%RAML 1.0 DataType 
+type: object
+properties:
+  Queue:
+    type: object
+    properties:
+      queueUrl:
+        type: string
+        example: https://sqs.ap-southeast-2.amazonaws.com/590183942957/targetQueue1
+        required: true
+  Attributes:
+    type: object
+    properties:
+      MaxNumberOfMessages:
+        description: Maximum number of messages to read.
+        type: integer
+        example: 2
+        required: false
+        default: 1
+      WaitTime:
+        description: "Maximum duration of a single poll, in seconds Set this field to a value between 1 and 20 to use long polling.
+
+With long polling, if there are messages available immediately, the connector returns the query results immediately. If not, the connector waits up to the specified amount of seconds for a message to be added before returning an empty response.
+
+Set this field to 0 to use short polling. With short polling, the connector always returns the query results as soon as possible, 
+even if that means returning an empty response."
+        type: integer
+        example: 3
+        required: false
+        default: 0

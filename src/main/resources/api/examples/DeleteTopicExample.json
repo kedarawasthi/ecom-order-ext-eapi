@@ -1,0 +1,5 @@
+{
+    "Topic": {
+        "topicArn": "arn:aws:sns:ap-southeast-2:590183942957:dummy-topic.fifo"
+    }
+}

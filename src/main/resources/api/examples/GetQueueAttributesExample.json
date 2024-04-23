@@ -1,0 +1,14 @@
+{
+    "Queue": {
+        "queueUrl": "https://sqs.ap-southeast-2.amazonaws.com/590183942957/salesorder-customer-queue"
+    },
+	"Attributes": [
+        "DelaySeconds",
+        "MaximumMessageSize",
+        "MessageRetentionPeriod",
+        "ReceiveMessageWaitTimeSeconds",
+        "VisibilityTimeout",
+        "RedrivePolicy",
+        "Policy"
+    ]
+}

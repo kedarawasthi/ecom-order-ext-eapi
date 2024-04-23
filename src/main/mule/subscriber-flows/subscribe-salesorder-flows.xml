@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="subscribe-salesorder-to-customer-flow" doc:id="7b02e4b0-50fe-4f27-95f8-3af7b40ad9ff">
+		<sqs:receivemessages doc:name="Receive messages" doc:id="4bb9e422-28e9-4c92-8d59-776b31c681d4" config-ref="Amazon_SQS_Configuration" queueUrl="${aws.sqs.queue.salesorder-customer.url}" preserveMessages="true" />
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="ec0a2b9b-5dbe-42ee-8d99-4de94ab3782d" correlationId="#[attributes.correlationId.stringValue default correlationId]">
+			<flow-ref doc:name="Flow Reference to salesorder-to-customer-sub-flow" doc:id="98d4462d-d0f3-4b11-821e-4c6d6fe31f66" name="salesorder-to-customer-sub-flow"/>
+		</tracing:with-correlation-id>
+		<error-handler ref="manual-dlq-redirect-error-handler">
+		</error-handler>
+	</flow>
+	<sub-flow name="salesorder-to-customer-sub-flow" doc:id="a453bb9d-5ce9-452b-95b6-a466893f3029">
+		<ee:transform doc:name="Set flow and context variables" doc:id="f49e3bb2-5558-408c-a747-34129cfd412a">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="receiptHandle"><![CDATA[attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+				<ee:set-variable variableName="queueUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.queue.salesorder-customer.url')]]></ee:set-variable>
+				<ee:set-variable variableName="path"><![CDATA[%dw 2.0
+output application/java
+---
+p('http.request.customer.path')]]></ee:set-variable>
+				<ee:set-variable variableName="entryTime"><![CDATA[%dw 2.0
+output application/java
+---
+now()]]></ee:set-variable>
+				<ee:set-variable variableName="dlqUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.dlq.salesorder-customer.url')]]></ee:set-variable>
+				<ee:set-variable variableName="flowContext" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"messageSchema": {
+		"correlationId": correlationId,
+		"businessId": attributes.businessId.stringValue default correlationId,
+		"messageType": attributes.messageType.stringValue
+	}
+}]]></ee:set-variable>
+				<ee:set-variable variableName="messageId" ><![CDATA[attributes."sqs.message.id"]]></ee:set-variable>
+				<ee:set-variable variableName="approximateReceiveCount" ><![CDATA[attributes."ApproximateReceiveCount"]]></ee:set-variable>
+			
+</ee:variables>
+		</ee:transform>
+		<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="fe0861ea-67a0-4c54-8aa9-ac62a562b412" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="f6791983-25a6-4823-8ce1-b4c24a8ec0de" />
+		<logger level="INFO" doc:name="Log Request" doc:id="507984ff-51b0-47d3-bdb5-d5c3062becbb" message="======= Subscribed from salesorder-customer-queue, BusinessUnitName #[payload.BusinessUnitName] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+		<logger level="INFO" doc:name="Log queue attributes" doc:id="a4a8956e-4c52-41ca-817e-188d651e7efc" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] | -----------------' />
+		<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="9f58894f-da57-41a1-b56f-03be91bcb4a9" name="common-oms-backend-service-sub-flow" />
+		<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="06e02c1c-851a-4434-89ea-bc505404fa39" name="deduplication-os-update-subroutine"/>
+		<ee:transform doc:name="Form delete-message request" doc:id="0e0bebb2-9fe9-4f8e-8275-bf12d113a149">
+			<ee:message>
+				<ee:set-payload><![CDATA[{
+    "Queue": {
+        "queueUrl": vars.queueUrl
+    },
+    "Attributes":{
+         "ReceiptHandle": vars.receiptHandle
+    }
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<sqs:delete-message doc:name="Delete message from src queue" doc:id="a49ba363-31a9-4e1d-b5bc-11df12602376" config-ref="Amazon_SQS_Configuration" receiptHandle="#[payload.Attributes.ReceiptHandle]" queueUrl="#[payload.Queue.queueUrl]" target="deleteMessageResponse" />
+		<logger level="INFO" doc:name="message deleted from src queue" doc:id="d50e8e57-5e17-4c16-9c91-5317b85197e2" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		<ee:transform doc:name="set response" doc:id="2826dcb4-f154-49cb-b325-78b592d88938">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 200,
+	"response": vars.omsBackendResponse
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="flow end" doc:id="f9eef097-ee0b-43df-82ff-0092a23fb049" message="======= flow processing end : #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+	</sub-flow>
+	
+</mule>

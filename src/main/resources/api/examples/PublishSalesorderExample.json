@@ -1,0 +1,70 @@
+{
+    "Queue": {
+        "queueUrl": "https://sqs.ap-southeast-2.amazonaws.com/590183942957/targetQueue2"
+    },
+    "Message": {
+        "BusinessUnitName": "1865_OCEAN",
+        "RequestingBusinessUnitName": "1865_OCEAN",
+        "SourceTransactionSystem": "OPS",
+        "SourceTransactionId": "SDUS14",
+        "SourceTransactionNumber": "SDUS14",
+        "BuyingPartyName": "SOGETREL",
+        "TransactionTypeCode": "CAPEX_NO_PROJECT",
+        "CustomerPONumber": "TEST",
+        "TransactionalCurrencyCode": "EUR",
+        "RequestingLegalEntity": "Orange Business Services SA",
+        "PartialShipAllowedFlag": true,
+        "FreezePriceFlag": false,
+        "FreezeShippingChargeFlag": false,
+        "FreezeTaxFlag": false,
+        "SubmittedFlag": true,
+        "Salesperson": "Ahlem Yousfi",
+        "billToCustomer": [
+            {
+                "PartyName": "SOGETREL"
+            }
+        ],
+        "shipToCustomer": [
+            {
+                "PartyName": "SOGETREL"
+            }
+        ],
+        "salesCredits": [
+            {
+                "SourceTransactionSalesCreditIdentifier": "1",
+                "SalesCreditTypeId": "1",
+                "Percent": "100",
+                "Salesperson": "Stephane Chaussat"
+            }
+        ],
+        "lines": [
+            {
+                "SourceTransactionLineNumber": "3",
+                "ProductNumber": "OCEE/FMA120",
+                "OrderedQuantity": "1",
+                "UnitSellingPrice": "122",
+                "RequestedShipDate": "2019-10-01",
+                "RequestedFulfillmentOrganizationCode": "OCE_AIX",
+                "PartialShipAllowedFlag": true,
+                "SubstitutionAllowedFlag": false,
+                "TransactionCategoryCode": "ORDER",
+                "SourceScheduleNumber": "1",
+                "SourceTransactionLineId": "3",
+                "SourceTransactionScheduleId": "1",
+                "OrderedUOM": "Each",
+                "ExtendedAmount": 122,
+                "manualPriceAdjustments": [
+                    {
+                        "AdjustmentAmount": "122",
+                        "AdjustmentTypeCode": "PRICE_OVERRIDE",
+                        "ReasonCode": "ORA_SALES_NEGOTIATION",
+                        "SequenceNumber": "1",
+                        "ChargeDefinitionCode": "QP_SALE_PRICE",
+                        "SourceManualPriceAdjustmentId": "1",
+                        "ChargeRollupFlag": false
+                    }
+                ]
+            }
+        ]
+    }
+}

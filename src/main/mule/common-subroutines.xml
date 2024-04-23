@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<sub-flow name="deduplication-os-update-subroutine" doc:id="6e0c9c2e-5a66-4ace-a793-0dbdfd78be28" >
+		<os:remove doc:name="remove first message occurance" doc:id="cfa8fd31-4116-493f-8a5f-31dddd9d4823" key='#[vars.messageId ++  "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store"/>
+		<os:store doc:name="store second message occurance" doc:id="4414c90e-99a2-4971-8eb6-3bcc79556fee" key='#[vars.messageId ++  "-arc-" ++ (vars.approximateReceiveCount + 1)]' objectStore="Object_store"/>
+		<logger level="INFO" doc:name="Updated messagId Key to avoid duplicate message subscription" doc:id="258c14ef-9381-449c-94f1-82a6a88c46b6" message="==============Updated messagId Key to avoid duplicate message subscription ======================" />
+	</sub-flow>
+</mule>

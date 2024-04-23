@@ -1,0 +1,38 @@
+{
+    "Queue": {
+        "queueName": "purchaseorder-product-queue"
+    },
+    "Attributes": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 262144,
+        "MessageRetentionPeriod": 345600,
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "VisibilityTimeout": 30,
+        "RedrivePolicy": {
+            "deadLetterTargetArn": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-product-dlq",
+            "maxReceiveCount": 3
+        },
+        "Policy": {
+            "Id": "SNS-SQS-Policy: arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-product-queue",
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "topic-subscription- arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic",
+                    "Action": [
+                        "sqs:SendMessage"
+                    ],
+                    "Effect": "Allow",
+                    "Resource": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-product-queue",
+                    "Condition": {
+                        "ArnLike": {
+                            "aws:SourceArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic"
+                        }
+                    },
+                    "Principal": {
+                        "AWS": "*"
+                    }
+                }
+            ]
+        }
+    }
+}

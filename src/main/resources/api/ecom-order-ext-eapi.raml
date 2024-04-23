@@ -1,0 +1,388 @@
+#%RAML 1.0
+title: ecom-order-ext-eapi
+version: v2
+
+documentation:
+  - title: eCommerce Orders Extension Experience API
+    content: API to cater orchestration of internal material and item extensions
+
+
+types:
+  CreateQueueRequestType: !include datatypes/CreateQueueRequestDatatype.raml
+  ReadFromQueueRequestType: !include datatypes/ReadFromQueueRequestDatatype.raml
+  AddPermissionToQueueType: !include datatypes/AddPermissionToQueueRequestDatatype.raml
+  SetQueueAttributesType: !include datatypes/SetQueueAttributesRequestDatatype.raml
+  PublishSalesorderType: !include datatypes/PublishSalesorderDatatype.raml
+  PublishSalesordersType: !include datatypes/PublishSalesordersDatatype.raml
+  PublishReturnorderType: !include datatypes/PublishReturnorderDatatype.raml
+  PublishReturnordersType: !include datatypes/PublishReturnordersDatatype.raml
+  PublishPurchaseorderType: !include datatypes/PublishPurchaseorderDatatype.raml
+  PublishPurchaseordersType: !include datatypes/PublishPurchaseordersDatatype.raml
+  
+protocols:
+  - HTTP
+  - HTTPS
+
+/v1:
+  /create-queue:
+    post:
+      displayName: create-queue
+      description: Creates a new queue or returns the URL of an existing one.
+      body:
+        application/json:
+          type: CreateQueueRequestType
+          example: !include /examples/CreateQueueExample.json
+      responses:
+          200:
+            body:
+              application/json:
+                example: !include /examples/CreateQueueResponseExample.json
+  
+  /delete-queue:
+    delete:
+      displayName: delete-queue
+      description: Deletes the message queue 
+      body:
+        application/json:
+          example: !include /examples/DeleteQueueExample.json
+      responses:
+          200:
+            body:
+              application/json:
+                example: !include /examples/DeleteQueueResponseExample.json
+    
+  /delete-message:
+    delete:
+      displayName: delete-message
+      description: Deletes the message from queue with receipt handle 
+      body:
+        application/json:
+          example: !include /examples/DeleteMessageExample.json
+      responses:
+          200:
+            body:
+              application/json:
+                example: !include /examples/DeleteMessageResponseExample.json  
+  /delete-message-batch:
+    delete:
+      displayName: delete-message-batch
+      description: Deletes the messagees from queue with array of receipt handles 
+      body:
+        application/json:
+          example: !include /examples/DeleteMessageBatchExample.json
+      responses:
+          200:
+            body:
+              application/json:
+                example: !include /examples/DeleteMessageBatchResponseExample.json  
+  
+  /get-queue-attributes:
+    get:
+      displayName: get-queue-attributes
+      description: Shows queue attributes to expose the underlying functionality.
+      body:
+        application/json:
+          example: !include /examples/GetQueueAttributesExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/GetQueueAttributesResponseExample.json
+  /get-queue-url:
+    get:
+      displayName: get-queue-url
+      description: Returns the URL of an existing queue.
+      body:
+        application/json:
+          example: !include /examples/GetQueueUrlExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/GetQueueUrlResponseExample.json
+  /list-dead-letter-source-queues:
+    get:
+      displayName: list-dead-letter-source-queues
+      description: Returns a list of the queues that have the Redrive Policy queue attribute configured with this dead-letter queue.
+      body:
+        application/json:
+          example: !include /examples/ListQueuesWithDlqExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/ListQueuesWithDlqResponseExample.json
+  
+  /list-queues:
+    get:
+      displayName: list-queues
+      description: Returns a list of queues starting with this prefix.
+      queryParameters:
+        queueNamePrefix: 
+          type: string
+          required: true
+          example: purchaseorder
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/ListQueuesResponseExample.json
+  
+  /purge-queue:
+    delete:
+      displayName: purge-queue
+      description: Deletes the messages in a queue specified by the queue URL.
+      body:
+        application/json:
+          example: !include /examples/PurgeQueueExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/PurgeQueueResponseExample.json
+  /read:
+    get:
+      displayName: read
+      description: Reads a number of messages from a queue.
+      body:
+        application/json:
+          type: ReadFromQueueRequestType
+          example: !include /examples/ReadFromQueueExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/ReadFromQueueResponseExample.json
+  
+  /add-permission:
+    post:
+      displayName: add-permission
+      description: Adds a permission to a message queue.
+      body:
+        application/json:
+          type: AddPermissionToQueueType
+          example: !include /examples/AddPermissionToQueueExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/AddPermissionToQueueResponseExample.json
+
+
+  /remove-permission:
+    delete:
+      displayName: remove-permission
+      description: Removes a permission from this message queue.
+      body:
+        application/json:
+          example: !include /examples/RemovePermissionFromQueueExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/RemovePermissionFromQueueResponseExample.json
+
+  /set-queue-attributes:
+    post:
+      displayName: set-queue-attributes
+      description: Sets the value of one or more queue attributes, which can take up to 60 seconds to propagate throughout the SQS system (although changes made to the MessageRetentionPeriod attribute can take up to 15 minutes).
+      body:
+        application/json:
+          type: SetQueueAttributesType
+          example: !include /examples/SetQueueAttributesExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/SetQueueAttributesResponseExample.json
+  
+  /send-message:
+    description: Sends a message to a specified queue or topic. The message must be between 1 and 256K bytes long.
+    /salesorder:
+      post:
+        displayName: send-message
+        description: send sales order to downstream customer service
+        body:
+          application/json:
+            type: PublishSalesorderType
+            example: !include /examples/PublishSalesorderExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageResponseExample.json
+    /returnorder:
+      post:
+        displayName: send-message
+        description: send return order to downstream item extension service
+        body:
+          application/json:
+            type: PublishReturnorderType
+            example: !include /examples/PublishReturnorderExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageResponseExample.json
+    /purchaseorder:
+      post:
+        displayName: send-message
+        description: publish purchase order to topic to be subscribed by product (inventory) and shipping service
+        body:
+          application/json:
+            type: PublishPurchaseorderType
+            example: !include /examples/PublishPurchaseorderExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageResponseExample.json
+
+  /send-message-batch:
+    /salesorder:
+      post:
+        displayName: send-message-batch
+        description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
+        body:
+          application/json:
+            type: PublishSalesordersType
+            example: !include /examples/PublishSalesordersExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageBatchResponseExample.json
+    /returnorder:
+      post:
+        displayName: send-message-batch
+        description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
+        body:
+          application/json:
+            type: PublishReturnordersType
+            example: !include /examples/PublishReturnordersExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageBatchResponseExample.json
+    /purchaseorder:
+      post:
+        displayName: send-message-batch
+        description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
+        body:
+          application/json:
+            type: PublishPurchaseordersType
+            example: !include /examples/PublishPurchaseordersExample.json
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/SendMessageBatchResponseExample.json
+  
+  /create-topic:
+    post:
+      displayName: create-topic
+      description: The CreateTopic action creates a topic to which notifications can be published. Users can create at most 100 topics. 
+      body:
+        application/json:
+          example: !include /examples/CreateTopicExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/CreateTopicResponseExample.json
+  
+  /delete-topic:
+    delete:
+      displayName: delete-topic
+      description: The DeleteTopic action deletes a topic and all its subscriptions.
+      body:
+        application/json:
+          example: !include /examples/DeleteTopicExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/DeleteTopicResponseExample.json
+  /get-topic-attributes:
+    get:
+      displayName: get-topic-attributes
+      description: The GetTopicAttributes action returns all of the properties of a topic. 
+      body:
+        application/json:
+          example: !include /examples/GetTopicAttributesExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/GetTopicAttributesResponseExample.json
+
+  /subscribe-topic:
+    post:
+      displayName: subscribe-topic
+      description: The Subscribe action prepares to subscribe an endpoint by sending the endpoint a confirmation message.
+      body:
+        application/json:
+          example: !include /examples/SubscribeTopicExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/SubscribeTopicResponseExample.json
+
+  /list-subscriptions-by-topic:
+    get:
+      displayName: list-subscriptions-by-topic
+      description: The SubscriptionsByTopic action returns a list of the subscriptions to a specific topic
+      body:
+        application/json:
+          example: !include /examples/ListSubscriptionsByTopicExample.json
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/ListSubscriptionsByTopicResponseExample.json
+
+  /reprocess:
+    /salesorder-customer:
+      get:
+        displayName: reprocess-dlq
+        description: performs redrive/reprocessing of retryable/non retryable messages to source queues
+        queryParameters:
+          maxNoOfMessagesToRedrive: 
+            type: number
+            required: false
+            example: 10
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/ReprocessDlqResponseExample.json
+    /returnorder-item-ext:
+      get:
+        displayName: reprocess-dlq
+        description: performs redrive/reprocessing of retryable/non retryable messages to source queues
+        queryParameters:
+          maxNoOfMessagesToRedrive: 
+            type: number
+            required: false
+            example: 10
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/ReprocessDlqResponseExample.json
+    /purchaseorder:
+      get:
+        displayName: reprocess-dlq
+        description: performs redrive/reprocessing of retryable/non retryable messages to source queues
+        queryParameters:
+          maxNoOfMessagesToRedrive: 
+            type: number
+            required: false
+            example: 10
+        responses:
+          200:
+              body:
+                application/json:
+                  example: !include /examples/ReprocessDlqResponseExample.json

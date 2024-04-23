@@ -1,0 +1,16 @@
+{
+    "status": 200,
+    "message": "dlq reprocessed",
+    "sendMessageBatchResult": {
+        "successful": [
+            "81d71291-0e89-46b5-aefa-fdb25ff77f1e"
+        ],
+        "failed": []
+    },
+    "deleteMessageBatchResult": {
+        "failed": [],
+        "successful": [
+            "81d71291-0e89-46b5-aefa-fdb25ff77f1e"
+        ]
+    }
+}

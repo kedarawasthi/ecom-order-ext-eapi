@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:amazon-lambda="http://www.mulesoft.org/schema/mule/amazon-lambda" xmlns:java="http://www.mulesoft.org/schema/mule/java"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/amazon-lambda http://www.mulesoft.org/schema/mule/amazon-lambda/current/mule-amazon-lambda.xsd">
+	<flow name="reprocess-returnorder-dlq-flow" doc:id="a0fa2714-3dd7-432c-b5d7-51201247b443" >
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "reprocess-returnorder"&#10;	}&#10;}]' doc:name="Set flowContext" doc:id="c3745c95-7fa3-4e23-aaad-ef9fd41119bb" variableName="flowContext" />
+		<set-variable value="#[true]" doc:name="Set reprocessedMessageFlag" doc:id="e9dbd661-c1f7-4a53-867d-1c4208773080" variableName="reprocessedMessageFlag" />
+		<set-variable value="#[attributes.queryParams.maxNoOfMessagesToRedrive]" doc:name="Set maxNoOfMessagesToRedrive" doc:id="c099395f-48af-4f9f-bd9f-ab03da830d1d" variableName="maxNoOfMessagesToRedrive" />
+		<logger level="INFO" doc:name="Initiating salesorder dlq reprocessing" doc:id="2088850c-7de5-4cfd-956d-c1c020efa5a1" message="======= Initiating returnorder dlq reprocessing | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+		<ee:transform doc:name="get-dlq-url request" doc:id="a8fd44c2-f57a-43a0-b8c4-25a5ca3e82f8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Queue": {
+        "queueName": p('aws.sqs.dlq.returnorder-item-ext.name')
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to get:\v1\get-queue-url:application\json:ecom-order-ext-eapi-config" doc:id="ce8da532-dd7f-45a9-b76d-56ab57c75bc7" name="get:\v1\get-queue-url:application\json:ecom-order-ext-eapi-config" target="dlqUrl" />
+		<logger level="INFO" doc:name="get-dlq-url repsonse log" doc:id="6ea6b31c-126a-44eb-b943-0ef6b19a9141" message="======= get-dlq-url repsonse log : #[vars.dlqUrl] | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+		<ee:transform doc:name="read request to dlq" doc:id="12ed9105-0c03-4975-b45f-09b979253ebb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Queue": {
+        "queueUrl": vars.dlqUrl
+    },
+	"Attributes": {
+        "MaxNumberOfMessages": vars.maxNoOfMessagesToRedrive,
+        "WaitTime": 3
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to get:\v1\read:application\json:ecom-order-ext-eapi-config" doc:id="57cd422c-5fe1-4c13-83b7-92b590262db5" name="get:\v1\read:application\json:ecom-order-ext-eapi-config" target="readResponse" />
+		<choice doc:name="Check if messages present in dlq or not" doc:id="62b8877e-4d37-4283-8800-b764f0c1b3b1" >
+			<when expression="#[sizeOf(vars.readResponse) &gt; 0]" >
+				<logger level="INFO" doc:name="Read messages from dlq complete" doc:id="cb5ef69a-a459-4a7f-b8ac-77d418f4e699" message="======= Read messages from dlq complete: #[vars.readResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+				<ee:transform doc:name="get-queue-url request" doc:id="8decef22-db51-432f-8f2d-7a1788f0e95d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Queue": {
+        "queueName": p('aws.sqs.queue.returnorder-item-ext.name')
+    }
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference to get:\v1\get-queue-url:application\json:ecom-order-ext-eapi-config" doc:id="ee268d41-52f8-4a1d-a412-db054802b2f8" name="get:\v1\get-queue-url:application\json:ecom-order-ext-eapi-config" target="queueUrl" />
+				<logger level="INFO" doc:name="get-queue-url repsonse log" doc:id="36e4137f-a763-48be-b8d5-e72371b5bf15" message="======= get-queue-url repsonse log : #[vars.queueUrl] | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+				<ee:transform doc:name="send-message-batch request to src queue" doc:id="b995d455-2436-4d53-be98-cf69749ff5aa" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Queue": {
+        "queueUrl": vars.queueUrl
+    },
+    "Message": vars.readResponse
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference to post:\v1\send-message-batch\returnorder:application\json:ecom-order-ext-eapi-config" doc:id="0fc2f790-c767-4ee7-b314-dfc6b7928487" name="post:\v1\send-message-batch\returnorder:application\json:ecom-order-ext-eapi-config" target="sendMessageBatchResponse" />
+				<choice doc:name="Check if any message failed while sending to src queue" doc:id="cd210121-39c3-4351-a282-8a2819db1e29" >
+					<when expression="#[sizeOf(vars.sendMessageBatchResponse.successful) &gt; 0]" >
+						<logger level="INFO" doc:name="Messages sent to src queue" doc:id="4b060da5-2a6d-42e2-8a5b-42dd08b7e669" message="======= Messages sent to src queue | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+						<ee:transform doc:name="delete-message-batch request to dlq" doc:id="f7f285ed-4d7c-4a97-9654-95af6b47f931" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Queue":{
+        "queueUrl": vars.dlqUrl
+    },
+    "Entries": vars.readResponse map ((item, index) -> {
+        "Id": item.id,
+        "ReceiptHandle": item.receiptHandle
+    })
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<flow-ref doc:name="Flow Reference to delete:\v1\delete-message-batch:application\json:ecom-order-ext-eapi-config" doc:id="a5a8dd09-d0f7-4ec3-bd84-fda810161f11" name="delete:\v1\delete-message-batch:application\json:ecom-order-ext-eapi-config" target="deleteMessageBatchResponse" />
+						<logger level="INFO" doc:name="delete-message-batch from dlq complete" doc:id="1d145243-0c6c-4c80-86c0-d038b5a29b24" message="======= delete-message-batch from dlq complete | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+						<choice doc:name="Check if delete-meesage-batch failed" doc:id="c1b00cc5-b2a3-486e-9d6c-63616368ef07" >
+							<when expression="#[sizeOf(vars.deleteMessageBatchResponse.failed) &gt; 0]" >
+								<logger level="INFO" doc:name="Initiaing retry subroutine for failed delete-messaage-batch entries" doc:id="a00b3709-016f-4b6d-bbf0-ec75290eec8a" message="======= Initiaing retry subroutine for failed delete-messaage-batch entries | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+							</when>
+							<otherwise >
+								<logger level="INFO" doc:name="No failures encountered in delete-message-batch operation" doc:id="acd9bb6c-e550-45ce-97de-951463bd0102" message="======= No failures encountered in delete-message-batch operation | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+							</otherwise>
+						</choice>
+						<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"sendMessageBatchResult": vars.sendMessageBatchResponse,&#10;	"deleteMessageBatchResult": vars.deleteMessageBatchResponse&#10;}]' doc:name="Set response" doc:id="aa9fc23a-4c06-478d-83d1-6f9bfffaaca4" variableName="response" />
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="send-message-batch failed entries " doc:id="5fb3ba0a-9583-4da9-acc8-0bc24e7b3f23" message="======= send-message-batch failed for all entry('s)| Abort delete-message-batch | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+						<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"sendMessageBatchResult": vars.sendMessageBatchResponse,&#10;	"deleteMessageBatchResult": vars.deleteMessageBatchResponse&#10;}]' doc:name="Set response" doc:id="d41220b6-f233-4c20-b21b-b92db3b6723a" variableName="response" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="no messages in dlq" doc:id="dd6649f9-23aa-4009-9b04-9511bca2b2be" message="======= no messages present in dlq | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
+				<set-variable value="no messages present in dlq" doc:name="Set response" doc:id="b1ab8327-e7bb-46bf-b153-a3c3839ad771" variableName="response" />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="set response" doc:id="15864d2e-83c8-479f-81cd-c34e46309f8b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "status": 200,
+   "message": vars.response
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="733af66e-a145-407c-8a6c-39266f6b3cf2" type="ANY" >
+				<logger level="INFO" doc:name="log error" doc:id="c8206978-ad82-4109-92aa-e72b58c7975a" message="======== Error: #[error.description] | Details: #[error.detailedDescription]  | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />
+				<ee:transform doc:name="set response" doc:id="4ab53867-7211-4dcd-831b-3d5f9e460788" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   "status": 200,
+   "message": error.description ++ error.detailedDescription
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

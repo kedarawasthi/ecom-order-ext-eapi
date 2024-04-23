@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<error-handler name="global-error-handler">
+		<on-error-propagate type="APIKIT:BAD_REQUEST">
+			<set-variable value="#[400]" doc:name="Set httpStatus" doc:id="f2f60401-fec8-4c68-b26c-c5f8117f35aa" variableName="httpStatus"/>
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Resource not found",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[400]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate type="APIKIT:NOT_FOUND">
+			<set-variable value="#[404]" doc:name="Set httpStatus" doc:id="da9f60c4-ed2b-47df-acb3-d402b6ad309f" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Resource not found",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[404]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		
+</on-error-propagate>
+		<on-error-propagate
+			type="APIKIT:METHOD_NOT_ALLOWED">
+			<set-variable value="#[405]" doc:name="Set httpStatus" doc:id="21d14987-3af8-413a-8708-8ff965cf4019" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Method not allowed",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[405]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		
+</on-error-propagate>
+		<on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+			<set-variable value="#[406]" doc:name="Set httpStatus" doc:id="c274f204-848e-49d4-93d9-e820afc588f4" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Not Acceptable",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[406]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		
+</on-error-propagate>
+		<on-error-propagate
+			type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+			<set-variable value="#[415]" doc:name="Set httpStatus" doc:id="0b1c3bd2-49a4-46c8-9a55-79af849d3fa2" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Not Implemented",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[415]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		
+</on-error-propagate>
+		<on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+			<set-variable value="#[501]" doc:name="Set httpStatus" doc:id="5448d208-b5dd-4cd4-b685-3346759e396f" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"message": "Not Implemented",
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[501]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		
+</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7d9734ee-d9d5-40f5-914c-7cffa978f6fb" type="ANY">
+			<set-variable value="#[500]" doc:name="Set httpStatus" doc:id="a98819fe-73cd-42b0-9e95-5fcdbaa65f5d" variableName="httpStatus" />
+			<ee:transform doc:name="Transform Message" doc:id="6e6d39ee-3354-4d84-826e-bbeb3180d2c6" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": vars.httpStatus,
+	"error":{
+		"description": error.detailedDescription,
+		"errorType": error.errorType.asString
+	}
+}
+]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="httpStatus" ><![CDATA[501]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+	
+</error-handler>
+
+</mule>

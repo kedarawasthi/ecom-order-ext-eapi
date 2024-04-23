@@ -1,0 +1,8 @@
+{
+    "ReceiveMessageWaitTimeSeconds": "0",
+    "DelaySeconds": "0",
+    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:ap-southeast-2:590183942957:salesorder-customer-dlq\",\"maxReceiveCount\":3}",
+    "MessageRetentionPeriod": "345600",
+    "MaximumMessageSize": "262144",
+    "VisibilityTimeout": "30"
+}

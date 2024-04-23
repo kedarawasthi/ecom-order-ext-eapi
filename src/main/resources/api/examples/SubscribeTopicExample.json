@@ -1,0 +1,9 @@
+{
+	"Topic": {
+        "topicArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic"
+    },
+	"Attributes":{
+		"protocol": "SQS",
+		"endpoint": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-product-queue"
+	}
+}

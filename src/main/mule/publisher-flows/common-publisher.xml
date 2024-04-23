@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:sns="http://www.mulesoft.org/schema/mule/sns" xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/sns http://www.mulesoft.org/schema/mule/sns/current/mule-sns.xsd">
+	<sub-flow name="common-sns-publisher-sub-flow" doc:id="aa7b807b-6173-4739-b053-57bd3046649f" >
+		<sns:publish doc:name="Publish to SNS topic" doc:id="50ee6196-b38a-4b2a-ab0e-dba270de96d3" config-ref="Amazon_SNS_configuration" topicArn="#[vars.topicArn]" >
+			<sns:message ><![CDATA[#[vars.messageBody]]]></sns:message>
+			<sns:message-attributes ><![CDATA[#[vars.flowContext.messageSchema]]]></sns:message-attributes>
+		</sns:publish>
+	</sub-flow>
+	<sub-flow name="common-sqs-publisher-sub-flow" doc:id="d1cd3fb8-6018-4a34-9355-c58211d3da5d" >
+		<sqs:send-message doc:name="Publish to SQS Queue" doc:id="c0de8d32-e1af-400c-8df9-9b1b129c1acc" config-ref="Amazon_SQS_Configuration" queueUrl="#[vars.queueUrl]" />
+	</sub-flow>
+</mule>

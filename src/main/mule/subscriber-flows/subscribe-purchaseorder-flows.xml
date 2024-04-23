@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd">
+	<flow name="subscribe-purchaseorder-to-product-service-flow" doc:id="ab1a1458-ba2d-4deb-b422-99bdf56bc10c">
+		<sqs:receivemessages doc:name="Receive messages" doc:id="48acff9b-988b-499c-b422-428ce72d1ce1" config-ref="Amazon_SQS_Configuration" preserveMessages="true" queueUrl="${aws.sqs.queue.purchaseorder-product.url}"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="65ecc7f3-e0c2-40c3-9145-17c40bdfd90d" />
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="059d133b-003c-4755-9885-0364d6e970f0" correlationId="#[payload.MessageAttributes.correlationId.Value default attributes.correlationId.stringValue default correlationId]">
+			<ee:transform doc:name="set payload,flow and context variables" doc:id="1af91e23-f1da-4933-b54d-0c70942a1a85">
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+if(payload."Type" == "Notification")
+	read(payload.Message,"application/json")
+else payload]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="messageId" ><![CDATA[attributes."sqs.message.id"]]></ee:set-variable>
+					<ee:set-variable variableName="approximateReceiveCount" ><![CDATA[attributes."ApproximateReceiveCount"]]></ee:set-variable>
+					<ee:set-variable variableName="receiptHandle"><![CDATA[attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+					<ee:set-variable variableName="queueUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.queue.purchaseorder-product.url')]]></ee:set-variable>
+					<ee:set-variable variableName="path"><![CDATA[%dw 2.0
+output application/java
+---
+p('http.request.product.path')]]></ee:set-variable>
+					<ee:set-variable variableName="dlqUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.dlq.purchaseorder.url')]]></ee:set-variable>
+					<ee:set-variable variableName="flowContext"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"messageSchema": {
+		"correlationId": correlationId,
+		"businessId": correlationId,
+		"messageType": "purchaseorder-product"
+	}
+}]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="9e1b1e83-aac1-4ede-afe3-884c5d5e0bba" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
+			<logger level="INFO" doc:name="Log Request" doc:id="cb2e89a3-4dd8-413e-9413-d5f0f1bc0f7b" message="======= Subscribed from purchaseorder-product-queue, PO number #[payload.data.po_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+			<logger level="INFO" doc:name="Log queue attributes" doc:id="590320f2-aa54-4d71-9c75-783c2afa131f" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
+			<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="679f8b52-3bad-4a6a-b25e-f36ec5de9ba7" name="common-oms-backend-service-sub-flow" />
+			<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="75632b7e-cdf1-425b-b0cf-507195458e5d" name="deduplication-os-update-subroutine" />
+			<ee:transform doc:name="Form delete-message request" doc:id="760b72dc-4912-4cd0-b779-c501293d9fa5">
+			<ee:message>
+				<ee:set-payload><![CDATA[{
+    "Queue": {
+        "queueUrl": vars.queueUrl
+    },
+    "Attributes":{
+         "ReceiptHandle": vars.receiptHandle
+    }
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<sqs:delete-message doc:name="Delete message from src queue" doc:id="a1f3a1ec-f3c0-4758-98cb-9a1ca08a0ff2" config-ref="Amazon_SQS_Configuration" receiptHandle="#[payload.Attributes.ReceiptHandle]" queueUrl="#[payload.Queue.queueUrl]" target="deleteMessageResponse" />
+			<logger level="INFO" doc:name="message deleted from src queue" doc:id="008d5b12-38cb-48b0-b651-b39c0aa6f8d1" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+			<ee:transform doc:name="set response" doc:id="0b3f759f-2c28-44ab-84d0-ab7d673e30f1" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 200,
+	"response": vars.omsBackendResponse
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="flow end" doc:id="fc8dfaf9-4c7c-46d2-97b9-fdc6437351b8" message="======= flow processing end : #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		</tracing:with-correlation-id>
+		<error-handler ref="manual-dlq-redirect-error-handler">
+		</error-handler>
+	</flow>
+	<flow name="subscribe-purchaseorder-to-shipping-service-flow" doc:id="54d296ba-40f5-4d6d-abfb-4c36ed2f56a5">
+		<sqs:receivemessages doc:name="Receive messages" doc:id="8e8384c1-e717-4c44-95a7-f5473e5af6d3" config-ref="Amazon_SQS_Configuration" preserveMessages="true" queueUrl="${aws.sqs.queue.purchaseorder-shipping.url}" />
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="bd5d4357-6aaa-44fb-9b24-3b090f524277" />
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="a1f3e03d-bc08-4b2e-a342-489e64f685d9" correlationId="#[payload.MessageAttributes.correlationId.Value default attributes.correlationId.stringValue default correlationId]" >
+			<ee:transform doc:name="set payload,flow and context variables" doc:id="8eaa8367-45bb-4a57-9458-6ed75f1531d2">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+if(payload."Type" == "Notification")
+	read(payload.Message,"application/json")
+else payload]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="messageId" ><![CDATA[attributes."sqs.message.id"]]></ee:set-variable>
+					<ee:set-variable variableName="approximateReceiveCount" ><![CDATA[attributes."ApproximateReceiveCount"]]></ee:set-variable>
+					<ee:set-variable variableName="flowContext"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"messageSchema": {
+		"correlationId": correlationId,
+		"businessId": correlationId,
+		"messageType": "purchaseorder-shipping"
+	}
+}]]></ee:set-variable>
+					<ee:set-variable variableName="receiptHandle"><![CDATA[attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+					<ee:set-variable variableName="queueUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.queue.purchaseorder-shipping.url')]]></ee:set-variable>
+					<ee:set-variable variableName="path"><![CDATA[%dw 2.0
+output application/java
+---
+p('http.request.shipping.path')]]></ee:set-variable>
+					<ee:set-variable variableName="dlqUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.dlq.purchaseorder.url')]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="b5d715e0-5e08-42d3-897b-fa4712b60114" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
+			<logger level="INFO" doc:name="Log Request" doc:id="2ae44c35-d573-48ea-ac16-4e618224f56c" message="======= Subscribed from purchaseorder-shipping-queue, PO number: #[payload.data.po_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+			<logger level="INFO" doc:name="Log queue attributes" doc:id="97d45c7e-3165-446d-9cf2-2791eeb76363" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle]-----------------' />
+			<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="91068c71-5e0e-4d6e-9c66-907925a429a0" name="common-oms-backend-service-sub-flow" />
+			<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="28d1f447-33a8-48d9-bf32-fd093cc336e0" name="deduplication-os-update-subroutine" />
+			<ee:transform doc:name="Form delete-message request" doc:id="05fa025c-1852-4c06-861a-b6207343bb41" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[{
+    "Queue": {
+        "queueUrl": vars.queueUrl
+    },
+    "Attributes":{
+         "ReceiptHandle": vars.receiptHandle
+    }
+}
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<sqs:delete-message doc:name="Delete message from src queue" doc:id="864f79a2-4b89-4d57-97b4-6870a8d0078e" config-ref="Amazon_SQS_Configuration" receiptHandle="#[payload.Attributes.ReceiptHandle]" queueUrl="#[payload.Queue.queueUrl]" target="deleteMessageResponse" />
+			<logger level="INFO" doc:name="message deleted from src queue" doc:id="5b763d74-c3cd-4732-8ee0-f0e9a9ed560b" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+			<ee:transform doc:name="set response" doc:id="85d1e2d4-9b51-4c33-82a8-589a8d5b981d" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 200,
+	"response": vars.omsBackendResponse
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="flow end" doc:id="1f116dc5-c0a5-420f-97f7-78173eb3427a" message="======= flow processing end : #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		</tracing:with-correlation-id>
+		<error-handler ref="manual-dlq-redirect-error-handler" />
+	</flow>
+</mule>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing" xmlns:amazon-lambda="http://www.mulesoft.org/schema/mule/amazon-lambda" xmlns:sns="http://www.mulesoft.org/schema/mule/sns" xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/sns http://www.mulesoft.org/schema/mule/sns/current/mule-sns.xsd
+http://www.mulesoft.org/schema/mule/amazon-lambda http://www.mulesoft.org/schema/mule/amazon-lambda/current/mule-amazon-lambda.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<global-property doc:name="Global Property" doc:id="ba968950-17c6-4b9a-8d4e-0e90e8ae8b77" name="env" value="${env}" />
+	<configuration-properties doc:name="Configuration properties" doc:id="3f3a28c6-7da5-4442-ac92-9bd5e60f7bd3" file="properties/config-${env}.yaml" />
+	<sqs:config name="Amazon_SQS_Configuration" doc:name="Amazon SQS Configuration" doc:id="a603ba76-0452-461f-a794-ad9daa3f1354" >
+		<sqs:basic-connection testQueueArn="${aws.sqs.queue.test-queue.arn}" accessKey="${secure::aws.common.access-key}" secretKey="${secure::aws.common.secret-access-key}" region="${aws.common.region}" />
+	</sqs:config>
+	<sns:config name="Amazon_SNS_configuration" doc:name="Amazon SNS configuration" doc:id="e60b4bfe-c64e-4306-adb6-1d36ccc23f9f" >
+		<sns:basic-connection testTopic="${aws.sns.topic.test-topic.arn}" accessKey="${secure::aws.common.access-key}" secretKey="${secure::aws.common.secret-access-key}" region="${aws.common.region}" />
+	</sns:config>
+	<amazon-lambda:config name="Amazon_Lambda_Connector_Config" doc:name="Amazon Lambda Connector Config" doc:id="e04fe9ba-3f68-4437-9de7-50c00721ded4" >
+		<amazon-lambda:connection accessKey="${secure::aws.common.access-key}" secretKey="${secure::aws.common.secret-access-key}" region="${aws.common.region}"/>
+	</amazon-lambda:config>
+	<tracing:config name="Tracing_Config" doc:name="Tracing Config" doc:id="532924b7-e44d-4b76-bcff-ceb9da3f1a89" />
+	<http:request-config name="HTTP_Local_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="33162cdf-db19-4b9c-ab8e-fac82d3ed32c" basePath="${http.request.local.basepath}">
+		<http:request-connection host="${http.request.local.host}" port="${http.request.local.port}" protocol="${http.request.local.protocol}"/>
+		
+	</http:request-config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="cfa725f4-2e92-40cc-8c86-22c9c4800bc9" entryTtl="1" entryTtlUnit="MINUTES" expirationInterval="20"/>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="92fa5a19-7a60-420e-9a2e-ef6e7d73ca11" file="properties\config-secure-dev.yaml" key="${key}"/>
+	<http:request-config name="HTTP_Aws_Lambda_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="e6002889-e152-49e3-85cc-5426baee7925" basePath="${http.request.aws-lambda.basepath}">
+		<http:request-connection host="${http.request.aws-lambda.host}" port="${http.request.aws-lambda.port}" protocol="${http.request.aws-lambda.protocol}"/>
+	</http:request-config>
+	<http:request-config name="HTTP_Aws_EC2_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="7b489c0e-25f7-40ae-9fce-02ec1f16b357" basePath="${http.request.aws-ec2.basepath}">
+		<http:request-connection protocol="${http.request.aws-ec2.protocol}" host="${http.request.aws-ec2.host}" port="${http.request.aws-ec2.port}" />
+	</http:request-config>
+	<http:listener-config name="ecom-order-ext-eapi-httpListenerConfig">
+        <http:listener-connection host="${http.listener.host}" port="${http.listener.port}" />
+    </http:listener-config>
+    <apikit:config name="ecom-order-ext-eapi-config" api="ecom-order-ext-eapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+</mule>

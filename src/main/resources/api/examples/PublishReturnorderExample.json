@@ -1,0 +1,43 @@
+{
+    "Queue": {
+        "queueUrl": "https://sqs.ap-southeast-2.amazonaws.com/590183942957/targetQueue2"
+    },
+    "Message": {
+        "template": "returns_form",
+        "data": {
+            "order_number": "1893",
+            "order_date": "02/29/2024",
+            "return_from": {
+                "name": "Casey Williams",
+                "address1": "57 Parkway, 5th Floor",
+                "address2": "New York, NY 10013",
+                "telephone": "+1 212-608-5983"
+            },
+            "return_to": {
+                "name": "Acme Returns",
+                "address1": "787 Brunswick",
+                "address2": "Los Angeles, CA 50028",
+                "telephone": "4444 555 555"
+            },
+            "items": [
+                {
+                    "image": "https://docamatic.s3-eu-west-1.amazonaws.com/assets/shoe.jpg",
+                    "description": "Men's Pursuit Running Shoes - 10/M - BLACK",
+                    "sku": "PRS3000011-AH",
+                    "barcode": 3000011303023329,
+                    "quantity": 2
+                }
+            ],
+            "message_title": "Thanks for your business!",
+            "message_body": "Please complete the above form and return it with the items carefully packed.",
+            "company": {
+                "name": "Acme",
+                "address": "787 Brunswick, Los Angeles, CA 50028",
+                "contact": "support@acme.com / 4444 555 555",
+                "website": "acme.com",
+                "vat_number": "103472324283"
+            },
+            "barcode": 1893
+        }
+    }
+}

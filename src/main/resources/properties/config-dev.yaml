@@ -1,0 +1,100 @@
+aws:
+  common:
+    region: "ap-southeast-2"
+  sqs:
+    queue:
+      test-queue: 
+        name: "test-queue"
+        arn:  "arn:aws:sqs:ap-southeast-2:891376909160:test-queue"
+        url:  "https://sqs.ap-southeast-2.amazonaws.com/891376909160/test-queue"
+      salesorder-customer: 
+        name: "salesorder-customer-queue"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:salesorder-customer-queue"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/salesorder-customer-queue"
+      returnorder-item-ext: 
+        name: "returnorder-item-ext-queue.fifo"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:returnorder-item-ext-queue.fifo"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/returnorder-item-ext-queue.fifo"
+      purchaseorder-product: 
+        name: "purchaseorder-product-queue"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:purchaseorder-product-queue"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/purchaseorder-product-queue"
+      purchaseorder-shipping: 
+        name: "purchaseorder-shipping-queue"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:purchaseorder-shipping-queue"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/purchaseorder-shipping-queue"
+    
+    dlq:
+      ecom-order-ext-eapi: 
+        name: "ecom-order-ext-eapi-dlq"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:ecom-order-ext-eapi-dlq"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/ecom-order-ext-eapi-dlq"
+      purchaseorder:
+        name: "purchaseorder-dlq"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:purchaseorder-dlq"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/purchaseorder-dlq"
+      returnorder-item-ext: 
+        name: "returnorder-item-ext-dlq.fifo"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:returnorder-item-ext-dlq.fifo"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/returnorder-item-ext-dlq.fifo"
+      salesorder-customer: 
+        name: "salesorder-customer-dlq"
+        arn: "arn:aws:sqs:ap-southeast-2:891376909160:salesorder-customer-dlq"
+        url: "https://sqs.ap-southeast-2.amazonaws.com/891376909160/salesorder-customer-dlq"
+  sns:
+    topic:
+      test-topic: 
+        name: "testTopic"
+        arn: "arn:aws:sns:ap-southeast-2:891376909160:test-topic"
+      purchaseorder: 
+        name: "purchaseorder-topic"
+        arn:  "arn:aws:sns:ap-southeast-2:891376909160:purchaseorder-topic"
+    
+  lambda:
+    dlq-reprocessor:
+      name: "ecom-dlq-reprocessor"
+      role:
+        arn: "arn:aws:iam::891376909160:role/service-role/ecom-dlq-reprocessor-role-k2r74ser"
+
+http:
+  listener:
+    host: "localhost"
+    port: "8081"
+    path: "/ecom-order-ext-eapi/*"
+  request:
+    aws-lambda:
+      basepath: "/dev/api"
+      protocol: "HTTPS"
+      host: "igofhjxqo5.execute-api.ap-southeast-2.amazonaws.com"
+      port: "443"
+    aws-ec2:
+      basepath: "/api"
+      protocol: "HTTP"
+      host: "ec2-54-252-21-172.ap-southeast-2.compute.amazonaws.com"
+      port: "8080"
+    local:
+      basepath: "/api"
+      protocol: "HTTP" 
+      host: "localhost"
+      port: "8080" 
+    customer:
+      path: "/customer"
+    item-ext:
+      path: "/item-ext"
+    shipping:
+      path: "/shipping"
+    product:
+      path: "/product"
+    
+  error:
+    retryable-errors: "HTTP:TIMEOUT,HTTP:INTERNAL_SERVER_ERROR,HTTP:BAD_GATEWAY,HTTP:SERVICE_UNAVAILABLE,HTTP:CONNECTIVITY"
+    non-retryable-errors: "HTTP:BAD_REQUEST,HTTP:UNAUTHORIZED,HTTP:FORBIDDEN,HTTP:NOT_FOUND,HTTP:METHOD_NOT_ALLOWED,HTTP:UNSUPPORTED_MEDIA_TYPE,HTTP:TOO_MANY_REQUESTS"
+  
+    
+  
+   
+            
+      
+
+
+    

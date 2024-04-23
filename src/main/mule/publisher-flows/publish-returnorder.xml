@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="publish-returnorder-to-queue-flow" doc:id="d72b9d45-ab60-4e0b-aad2-4e5ac96ce79e" >
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "returnorder"&#10;	}&#10;}]' doc:name="Set FlowContext" doc:id="731aa74d-026a-4ecc-a6c7-d3acb26d8c71" variableName="flowContext" />
+		<logger level="INFO" doc:name="Log Request" doc:id="1cccc0f7-13a8-4f43-ae9e-e6b0be665b05" message='==========Received returnorder request: RO Number #[payload.Message.data.order_number] | MessageGrp Id: #[payload.Message."grp_id"] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]' />
+		<set-variable value="#[payload.Queue.queueUrl]" doc:name="queueUrl" doc:id="6f9d753c-bb14-4d46-a113-453d8d082b4e" variableName="queueUrl" />
+		<set-variable value="#[payload.Message.grp_id]" doc:name="set group id" doc:id="67bd78c9-ee8a-432f-bf51-d2df85145868" variableName="messageGroupId" />
+		<set-variable value='#[write(payload.Message,"application/json")]' doc:name="messageBody" doc:id="206c7a7b-7c37-4161-9726-2d8d6d69217c" variableName="messageBody" />
+		<ee:transform doc:name="Form Request as POJO" doc:id="36cf9215-80f0-4bcc-ab8c-0995a884c187" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	body: vars.messageBody as String,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: vars.messageGroupId,
+	id: null,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": vars.flowContext.messageSchema.correlationId,
+			"dataType": "String.correlationId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": vars.flowContext.messageSchema.businessId,
+			"dataType": "String.businessId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": vars.flowContext.messageSchema.messageType,
+			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="Flow Reference to common-sqs-publisher-sub-flow" doc:id="0a6c56d3-e78c-4d9c-823e-bc15afbcc966" name="common-sqs-publisher-sub-flow" />
+		<ee:transform doc:name="Transform Response" doc:id="76616290-d37d-44f2-a651-39e053438e2f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log Response" doc:id="2f03271d-0778-4ad2-b349-63197e89d2dd" message="=====Response from SQS publish: #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]" />
+	</flow>
+</mule>

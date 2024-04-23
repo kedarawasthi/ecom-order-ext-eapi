@@ -1,0 +1,36 @@
+[
+    {
+        "inboundAttachmentNames": [],
+        "exceptionPayload": null,
+        "inboundPropertyNames": [],
+        "outboundAttachmentNames": [],
+        "outboundPropertyNames": [],
+        "payload": {
+            "owner": "590183942957",
+            "subscriptionArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic:ffd6750c-fa33-47b4-8800-3a2d4adf9b60",
+            "protocol": "sqs",
+            "endpoint": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-product-queue",
+            "topicArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic"
+        },
+        "attributes": {
+            "requestId": "5b8662b9-e1f9-51da-92df-3c35aee3fed0"
+        }
+    },
+    {
+        "inboundAttachmentNames": [],
+        "exceptionPayload": null,
+        "inboundPropertyNames": [],
+        "outboundAttachmentNames": [],
+        "outboundPropertyNames": [],
+        "payload": {
+            "owner": "590183942957",
+            "subscriptionArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic:baa80b88-29fb-4d2a-90d8-034b96cfa33c",
+            "protocol": "sqs",
+            "endpoint": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-shipping-queue",
+            "topicArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic"
+        },
+        "attributes": {
+            "requestId": "5b8662b9-e1f9-51da-92df-3c35aee3fed0"
+        }
+    }
+]

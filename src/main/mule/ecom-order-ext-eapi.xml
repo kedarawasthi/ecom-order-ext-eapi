@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:sns="http://www.mulesoft.org/schema/mule/sns" xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd http://www.mulesoft.org/schema/mule/sns http://www.mulesoft.org/schema/mule/sns/current/mule-sns.xsd http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd">
+    <flow name="ecom-order-ext-eapi-main">
+        <http:listener config-ref="ecom-order-ext-eapi-httpListenerConfig" path="${http.listener.path}">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="ecom-order-ext-eapi-config" />
+        <error-handler ref="global-error-handler" />
+    </flow>
+    <flow name="ecom-order-ext-eapi-console">
+        <http:listener config-ref="ecom-order-ext-eapi-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="ecom-order-ext-eapi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\v1\create-queue:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="43282893-4e1b-432e-a248-bd0094252386" message="=======Received create-queue request: #[payload] | CorrelationId: #[correlationId]" />
+        <ee:transform doc:name="serialize attribute objects" doc:id="221537bc-2710-4710-8ec1-7f11a47d6137">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+payload  
+
+update ["Attributes", field("RedrivePolicy")] with write(payload.Attributes.RedrivePolicy,"application/json")
+
+update ["Attributes", field("Policy")] with write(payload.Attributes.Policy,"application/json")]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <sqs:create-queue doc:name="Create queue" doc:id="7b951842-00b8-4fb7-89ae-5631f391e2a1" config-ref="Amazon_SQS_Configuration" queueName="#[payload.Queue.queueName]">
+            <sqs:attributes><![CDATA[#[payload.Attributes]]]></sqs:attributes>
+        </sqs:create-queue>
+        <ee:transform doc:name="Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="790eed76-25bd-4ca9-bd13-f9236c0adc39" message="======= create-queue response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="post:\v1\create-topic:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="fc8cbe7c-15d4-4e00-ba75-b6e03979be2a" message="=========Received create-topic request: #[payload] | CorrelationId: #[correlationId]" />
+        <sns:create-topic doc:name="Create topic" doc:id="138e5c0b-6825-492f-92d1-7fea6e4ff48b" config-ref="Amazon_SNS_configuration" topicName="#[payload.Topic.topicName]" />
+        <ee:transform doc:name="Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="64c504c2-9a2f-4338-8509-4301422dff35" message="========create-topic response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="post:\v1\set-queue-attributes:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="9f36e62d-78a9-4ada-b281-571b805f96da" message="========Received set-queue-attributes request: #[payload] | CorrelationId: #[correlationId]" />
+        <ee:transform doc:name="serialize attribute objects" doc:id="833f9e5a-b484-4cc1-9002-bd1fc81ae0ca">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+payload  
+
+update ["Attributes", field("RedrivePolicy")] with write(payload.Attributes.RedrivePolicy,"application/json")
+
+update ["Attributes", field("Policy")] with write(payload.Attributes.Policy,"application/json")]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <sqs:set-queue-attributes doc:name="Set queue attributes" doc:id="81a36e72-14b3-41ca-815f-c45f502fb539" config-ref="Amazon_SQS_Configuration" queueUrl="#[payload.Queue.queueUrl]">
+            <sqs:attributes><![CDATA[#[payload.Attributes]]]></sqs:attributes>
+        </sqs:set-queue-attributes>
+        <ee:transform doc:name="Response" doc:id="628e164d-8731-4607-b725-213e961157dc">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="16d6d5a0-e2cc-4248-8e59-3936045a3d5b" message="======= set-queue-attributes response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="post:\v1\subscribe-topic:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="ffc0468f-1db3-4a18-80aa-76318ae7e985" message="======== Received subscribe-topic request: #[payload] | CorrelationId: #[correlationId]" />
+        <sns:subscribe doc:name="Subscribe" doc:id="46bf9f06-db4b-43d5-9e85-4026441008d8" config-ref="Amazon_SNS_configuration" topicArn="#[payload.Topic.topicArn]" protocol="#[payload.Attributes.protocol]" endpoint="#[payload.Attributes.endpoint]" />
+        <ee:transform doc:name="Response" doc:id="d340724d-206b-4d86-b4d5-c36f78f20dc7">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="fc55995d-b1e3-471d-9d75-f9bede670ee3" message="========= subscribe-topic response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="post:\v1\add-permission:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="8bd41fd5-1ff0-4893-9214-d3766e28ad3a" message="========Received add-permission request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:add-permission doc:name="Add permission" doc:id="9c34511a-6f15-489f-a2e1-0a3b329a408a" accountIds="#[payload.awsAccountIds]" actions="#[payload.actions]" config-ref="Amazon_SQS_Configuration" label="#[payload.label]" queueUrl="#[payload.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="fda020ca-a658-4047-9f03-3a31371cd9ce">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="5ac9e6e2-eeb3-4769-8416-d091558b3cd2" message="======== add-permission response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\remove-permission:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="aa2b4220-b6b4-443a-8823-05e4387cf889" message="======== Received remove-permission request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:remove-permission doc:name="Remove permission" doc:id="06fb30c3-ac4b-45fc-8351-335e622aa36c" config-ref="Amazon_SQS_Configuration" label="#[payload.label]" queueUrl="#[payload.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="4f2348da-04c8-446c-971d-9c3195faaa96">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="7046441d-5ded-4231-b811-21864a7bea31" message="======== remove-permission response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\delete-queue:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="6d51e52c-7505-4a99-90f2-62bf81835a9e" message="======= Received delete-queue request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:delete-queue doc:name="Delete queue" doc:id="5ef7d6b6-5423-4196-b229-a1b4dd21ae1f" config-ref="Amazon_SQS_Configuration" queueUrl="#[payload.Queue.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="c94151f6-0a0c-48a1-90d3-8d5e2a088717">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="2c1f6a5e-6d04-4cfb-a8f3-cbef29679a62" message="======== delete-queue response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\delete-topic:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="3a0d0d79-39fb-4169-aaa0-7e9a368ca5db" message="========Received delete-topic request: #[payload] | CorrelationId: #[correlationId]" />
+        <sns:delete-topic doc:name="Delete topic" doc:id="64dca2ee-ffd9-4709-bc2a-9b5c92ae2a9b" config-ref="Amazon_SNS_configuration" topicArn="#[payload.Topic.topicArn]" />
+        <ee:transform doc:name="Response" doc:id="097f6c0e-d638-4f2a-a26d-ebb4f5d872e0">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="815a290d-c495-4598-8de2-8a2ce9a3d074" message="======= delete-topic response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\purge-queue:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="71f0522d-1667-4cf6-a70a-8ddf21ee125d" message="======== Received purge-queue request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:purge-queue doc:name="Purge queue" doc:id="e9038f97-c6c2-4fa9-bf66-1102fa2a192e" config-ref="Amazon_SQS_Configuration" queueUrl="#[payload.Queue.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="48012d30-4b07-495f-9d9f-670de82d4c01">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="72821f96-2bc2-462d-a0ee-1512dfd3a74e" message="======== purge-queue response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\delete-message:application\json:ecom-order-ext-eapi-config" doc:id="89dceabc-86c6-494a-8fa6-81c94388dbce">
+        <logger level="INFO" doc:name="Log Request" doc:id="a5bb78be-0316-4734-bf35-9f2e8569bbf6" message="======== Received delete-message request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:delete-message doc:name="Delete message" doc:id="b9141fe7-b101-4f74-8806-a886d87f85e8" config-ref="Amazon_SQS_Configuration" receiptHandle="#[payload.Attributes.ReceiptHandle]" queueUrl="#[payload.Queue.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="11ae2884-405a-4032-bc4d-671608302ca0">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="89550a7d-cd41-4ff0-848a-206bdccdec53" message="======= delete-message response: #[payload]  | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="delete:\v1\delete-message-batch:application\json:ecom-order-ext-eapi-config" doc:id="db503427-1d18-4d78-aef9-2e0327b0088f">
+        <logger level="INFO" doc:name="Log Request" doc:id="5f19c53a-cf11-4391-b048-6173de868abf" message="======= Received delete-message-batch request  | CorrelationId: #[correlationId]" />
+        <sqs:delete-message-batch doc:name="Delete message batch" doc:id="38c97e46-2257-4a80-92f9-a229ad4e277f" config-ref="Amazon_SQS_Configuration" entries="#[payload.Entries]" queueUrl="#[payload.Queue.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="0d34c999-bc59-4202-9c61-61bbeb2827f4">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="e91b4cf5-4df3-4f37-bd9a-893173e1a2be" message="======== delete-message response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\get-queue-attributes:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="086f56b8-855e-4104-923b-d9fcfb66c6c9" message="======= Received get-queue-attributes request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:get-queue-attributes doc:name="Get queue attributes" doc:id="d58f9d5b-fa14-4f16-a385-36ecc6eca151" config-ref="Amazon_SQS_Configuration" queueUrl="#[payload.Queue.queueUrl]" attributeNames="#[if(!isEmpty(payload.Attributes)) payload.Attributes&#xA;else []]" />
+        <ee:transform doc:name="Response" doc:id="c21a1fe4-c0d1-4d3d-bf81-7a82a0fab69f">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="71efbb55-f56a-4acb-8179-83d6cfd0aca8" message="========get-queue-attributes response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\get-queue-url:application\json:ecom-order-ext-eapi-config" doc:id="df04b71f-ea59-487c-bf8d-274218fe99d1">
+        <logger level="INFO" doc:name="Log Request" doc:id="712625c0-0481-499c-8232-8f9b27561137" message="======= Received get-queue-url request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:get-queue-url doc:name="Get queue url" doc:id="f167cd65-fdad-461f-8f16-9b64f86d2e11" config-ref="Amazon_SQS_Configuration" queueName="#[payload.Queue.queueName]" />
+        <ee:transform doc:name="Response" doc:id="af6f9d6a-94d6-4c4b-916a-fe50df84e5f5">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="5f27e61a-6759-4761-9101-c96e9167ad08" message="======= get-queue-url response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\get-topic-attributes:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="e5928002-d378-42ad-a716-bbbf2debd085" message="========Received get-topic-attributes request: #[payload] | CorrelationId: #[correlationId]" />
+        <sns:get-topic-attributes doc:name="Get topic attributes" doc:id="483f447f-c659-4b50-b924-a56f2aeafd0b" config-ref="Amazon_SNS_configuration" topicArn="#[payload.Topic.topicArn]" />
+        <ee:transform doc:name="Response" doc:id="2b57b7c7-439c-40a2-89e8-2a753e3b9e64">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="fb1356b1-89ac-4128-bc3a-5de02dda7dad" message="======== get-topic-attributes response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\list-dead-letter-source-queues:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="edc27d8f-bfbc-43f5-bd3a-ffb019b50a0c" message="======Received list-dead-letter-source-queues request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:list-dead-letter-source-queues doc:name="List dead letter source queues" doc:id="73374a11-b07e-4241-a462-3512d6f0166b" config-ref="Amazon_SQS_Configuration" queueUrl="#[payload.Queue.queueUrl]" />
+        <ee:transform doc:name="Response" doc:id="0557649c-cbb9-4c3f-8922-7f981535c825">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="9dc30c07-2cf6-450a-b590-76626ba6f98a" message="======== list-dead-letter-source-queues response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\list-queues:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="b8c407a4-02c8-4e60-8bc3-baa515c0c1b3" message="=========Received list-queues request: #[payload] | CorrelationId: #[correlationId]" />
+        <sqs:list-queues doc:name="List queues" doc:id="51ffe066-42ff-4949-a16e-9b50dc2f58e6" config-ref="Amazon_SQS_Configuration" queueNamePrefix="#[attributes.queryParams.queueNamePrefix]" />
+        <ee:transform doc:name="Response" doc:id="ea15a8cc-812c-4ab6-bd5d-f51dfe311109">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="fec31ae7-8ff9-4e5a-9a4b-ec8394ada587" message="=========list-queues response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\list-subscriptions-by-topic:application\json:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Log Request" doc:id="2d2fe29c-2d7d-47d5-bdf8-6b204ec0bacf" message="========Received list-subscriptions-by-topic: #[payload] | CorrelationId: #[correlationId]" />
+        <sns:list-subscriptions-by-topic doc:name="List subscriptions by topic" doc:id="a8ff7675-a4b6-45fb-9f8b-047e37408eb3" config-ref="Amazon_SNS_configuration" arn="#[payload.Topic.topicArn]" />
+        <ee:transform doc:name="Response" doc:id="c2401832-0345-4ca7-8d2c-1a9a94cf580f">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="26734622-b0d4-434d-9c38-57414aa64181" message="========list-subscriptions-by-topic response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="get:\v1\read:application\json:ecom-order-ext-eapi-config" doc:id="2ada92bb-d0a9-49c1-8374-b88dee799fbd">
+        <logger level="INFO" doc:name="Log Request" doc:id="002cf91b-6b7c-4698-a0d0-6acf6116c4d6" message="=========Received read request: #[payload] | CorrelationId: #[correlationId]" />
+        <set-variable value="#[[]]" doc:name="accumulator" doc:id="beaa67d0-626d-46fa-b5ef-823005d768a0" variableName="accumulator" />
+        <sqs:read doc:name="Read" doc:id="b0a26d97-1bb0-4005-bdf5-6e5268dec406" config-ref="Amazon_SQS_Configuration" maxNumberOfMessages="#[payload.Attributes.MaxNumberOfMessages]" queueUrl="#[payload.Queue.queueUrl]" waitTime="#[payload.Attributes.WaitTime]" />
+        <foreach doc:name="For Each" doc:id="16d15947-63e4-46fc-86ba-c354d4af2fd5" collection="#[payload]">
+            <java:invoke-static doc:name="Invoke static convertMessageObjectToJson Method" doc:id="81298515-597d-4eb7-84b4-6e689a1dce9e" class="com.dev.utils.ObjectToJson" method="convertMessageObjectToJson(Object)">
+                <java:args><![CDATA[#[{obj: payload}]]]></java:args>
+            </java:invoke-static>
+            <logger level="INFO" doc:name="Log desearialized response" doc:id="52534e07-18a7-4ac5-81d0-0595b6a32f8b" message="=========Invoke static method response: #[payload] | CorrelationId: #[correlationId]" />
+            <ee:transform doc:name="accumulate result" doc:id="75e78acc-2e52-4714-9ade-5837706ff176">
+                <ee:message />
+                <ee:variables>
+                    <ee:set-variable variableName="accumulator"><![CDATA[%dw 2.0
+output application/json
+---
+vars.accumulator + read(payload,"application/json")]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </foreach>
+        <ee:transform doc:name="Response" doc:id="1632e558-b2d0-44bf-a873-d75fe8c9df9b">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.accumulator]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="ce980ab4-873c-430d-9688-cf33391c0d23" message="=========read response: #[payload] | CorrelationId: #[correlationId]" />
+    </flow>
+    <flow name="post:\v1\send-message\salesorder:application\json:ecom-order-ext-eapi-config">
+        <flow-ref doc:name="Flow Reference to publish-salesorder-to-queue-flow" doc:id="87124ece-b6ee-4ad6-b151-e18ac1a95094" name="publish-salesorder-to-queue-flow" />
+    </flow>
+    <flow name="post:\v1\send-message-batch\salesorder:application\json:ecom-order-ext-eapi-config" doc:id="e64ec82a-ba81-468b-abe3-b956bfdd198b">
+        <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.flowContext.messageSchema.correlationId default correlationId,&#xA;  &quot;businessId&quot;: vars.flowContext.messageSchema.businessId default correlationId,&#xA;  &quot;messageType&quot;: vars.flowContext.messageSchema.messageType default &quot;salesorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="dd629723-a2c4-49b5-8982-d4400adb0e6d" variableName="flowContext" />
+        <logger level="INFO" doc:name="Log Request" doc:id="5ef0d859-ae0e-46ab-aabe-3183b6e67bd8" message="========Received send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <set-variable value="#[payload.Queue.queueUrl]" doc:name="Set queueUrl" doc:id="54e592e0-ba0e-4395-9b5f-eb849e200aa4" variableName="queueUrl" />
+        <choice doc:name="check if messages are from dlq or not" doc:id="f3ef8097-2ca4-4338-8657-3f0c732fd819">
+            <when expression="#[vars.reprocessedMessageFlag default false]">
+                <set-variable value="#[[]]" doc:name="accumulator" doc:id="8b6d506a-3637-48d0-b8ff-24b131ef8c33" variableName="accumulator" />
+                <foreach doc:name="For Each" doc:id="95e20a84-fad4-4419-b64f-145bc6907abd" collection="#[payload.Message]">
+                    <ee:transform doc:name="Form Request as POJO" doc:id="08eafdb6-3116-4c53-8705-e27ab674cfcc">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{	
+	body: payload.body,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: null,
+	id: payload.id,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": payload.messageAttributes.correlationId.stringValue,
+			"dataType": payload.messageAttributes.correlationId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": payload.messageAttributes.businessId.stringValue,
+			"dataType": payload.messageAttributes.businessId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": payload.messageAttributes.messageType.stringValue,
+			"dataType": payload.messageAttributes.messageType.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                    <ee:transform doc:name="accumulate result" doc:id="42c6a905-4785-4343-8da8-eb0e3150a45e">
+                        <ee:message />
+                        <ee:variables>
+                            <ee:set-variable variableName="accumulator"><![CDATA[vars.accumulator + payload]]></ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+                </foreach>
+                <set-payload value="#[vars.accumulator]" doc:name="Set Payload" doc:id="678f99ba-10b6-4af7-92af-622517104331" />
+            </when>
+            <otherwise>
+                <set-variable value="#[[]]" doc:name="accumulator" doc:id="34008f4b-8e70-4c02-b5e3-7287cff681e1" variableName="accumulator" />
+                <foreach doc:name="For Each" doc:id="4043c842-f1db-4a58-abe4-94b717caac3f" collection="#[payload.Message]">
+                    <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1d344a8a-0636-4d3e-b15d-33f5a5405900" variableName="uid" />
+                    <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.uid,&#xA;  &quot;businessId&quot;: vars.uid,&#xA;  &quot;messageType&quot;: &quot;salesorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="23d25f79-1175-4575-9cdc-c8f75c7dadb1" variableName="flowContext" />
+                    <ee:transform doc:name="Form Request as POJO" doc:id="7383ff7d-b446-4263-8259-580bdc49cdec">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+var messageBody = write(payload,"application/json")
+---
+{
+	body: messageBody as String,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: null,
+	id: vars.flowContext.messageSchema.correlationId,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": vars.flowContext.messageSchema.correlationId,
+			"dataType": "String.correlationId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": vars.flowContext.messageSchema.businessId,
+			"dataType": "String.businessId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": vars.flowContext.messageSchema.messageType,
+			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                    <ee:transform doc:name="accumulate result" doc:id="9b76a4ff-ac27-4506-b706-8b256f6e95f9">
+                        <ee:message />
+                        <ee:variables>
+                            <ee:set-variable variableName="accumulator"><![CDATA[vars.accumulator + payload]]></ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+                </foreach>
+                <set-payload value="#[vars.accumulator]" doc:name="Set Payload" doc:id="48fc2796-c0e0-4bfe-962f-64104fd981cd" />
+            </otherwise>
+        </choice>
+        <logger level="INFO" doc:name="Log actual send-message-batch request" doc:id="c89ed47a-b28c-47dd-b36e-504606f0c2aa" message="======== actual send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <sqs:send-message-batch doc:name="Send message batch" doc:id="fa54bc9a-9492-42a4-b485-60382858a076" config-ref="Amazon_SQS_Configuration" queueUrl="#[vars.queueUrl]" />
+        <java:invoke-static method="convertBatchResultObjectToJson(Object)" doc:name="Invoke static convertBatchResultObjectToJson Method" doc:id="3f308c7d-7037-4e83-98c8-e395c258164d" class="com.dev.utils.ObjectToJson">
+            <java:args><![CDATA[#[{obj: payload}]]]></java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="payload" doc:id="39deea4e-f89d-4602-91d4-fadb6e705b15">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+read(payload,"application/json")]]></ee:set-payload>
+            </ee:message>
+            <ee:variables />
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="b4487006-3140-4249-b76a-55923120996b" message="========Log send-message-batch response #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+    </flow>
+    <flow name="post:\v1\send-message\returnorder:application\json:ecom-order-ext-eapi-config">
+        <flow-ref doc:name="Flow Reference to publish-returnorder-to-queue-flow" doc:id="9b215ff6-9147-41fb-a795-00226bee500c" name="publish-returnorder-to-queue-flow" />
+    </flow>
+    <flow name="post:\v1\send-message-batch\returnorder:application\json:ecom-order-ext-eapi-config">
+        <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.flowContext.messageSchema.correlationId default correlationId,&#xA;  &quot;businessId&quot;: vars.flowContext.messageSchema.businessId default correlationId,&#xA;  &quot;messageType&quot;: vars.flowContext.messageSchema.messageType default &quot;returnorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="b5f17e49-7684-4f71-b4b8-934f07217b20" variableName="flowContext" />
+        <logger level="INFO" doc:name="Log Request" doc:id="b635c2b6-e2a1-4a06-8ef1-f3c1a02c22b4" message="========Received send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <set-variable value="#[payload.Queue.queueUrl]" doc:name="Set queueUrl" doc:id="52dd0f10-7125-4033-8d6d-acf2697bfab5" variableName="queueUrl" />
+        <choice doc:name="check if messages are from dlq or not" doc:id="6d250fd7-e723-4615-980a-818d489da362">
+            <when expression="#[vars.reprocessedMessageFlag default false]">
+                <set-variable value="#[[]]" doc:name="accumulator" doc:id="29410333-d585-43bf-98fd-946d73f94768" variableName="accumulator" />
+                <foreach doc:name="For Each" doc:id="5f5954d6-e457-46e1-9f7b-f203d01ecbc9" collection="#[payload.Message]">
+                    <ee:transform doc:name="Form Request as POJO" doc:id="562a73ed-e6e8-4b7e-a630-26a87d2d9683">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+var temp = read(payload.body,"application/json")
+---
+{	
+	body: payload.body,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: temp.grp_id,
+	id: payload.id,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": payload.messageAttributes.correlationId.stringValue,
+			"dataType": payload.messageAttributes.correlationId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": payload.messageAttributes.businessId.stringValue,
+			"dataType": payload.messageAttributes.businessId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": payload.messageAttributes.messageType.stringValue,
+			"dataType": payload.messageAttributes.messageType.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                    <ee:transform doc:name="accumulate result" doc:id="f47b5e58-f3ac-4183-b189-b191fafefbf3">
+                        <ee:message />
+                        <ee:variables>
+                            <ee:set-variable variableName="accumulator"><![CDATA[vars.accumulator + payload]]></ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+                </foreach>
+                <set-payload value="#[vars.accumulator]" doc:name="Set Payload" doc:id="78bc067b-f037-4f5d-9da0-378aa60c3394" />
+            </when>
+            <otherwise>
+                <set-variable value="#[[]]" doc:name="accumulator" doc:id="759cc6f7-2baf-4c69-97c9-b1facc1bc2a7" variableName="accumulator" />
+                <foreach doc:name="For Each" doc:id="215186f7-f509-42e2-8132-f303f98de972" collection="#[payload.Message]">
+                    <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1ce52dd4-eb85-4a55-b27b-75daeb59d118" variableName="uid" />
+                    <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.uid,&#xA;  &quot;businessId&quot;: vars.uid,&#xA;  &quot;messageType&quot;: &quot;returnorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="9b917edd-e1ae-45cc-a6d2-d85013bd4928" variableName="flowContext" />
+                    <ee:transform doc:name="Form Request as POJO" doc:id="96fce1b7-97d9-4cc9-b9f2-5238dab2b9ea">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+var messageBody = write(payload,"application/json")
+---
+{
+	body: messageBody as String,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: payload.grp_id,
+	id: vars.flowContext.messageSchema.correlationId,
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": vars.flowContext.messageSchema.correlationId,
+			"dataType": "String.correlationId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": vars.flowContext.messageSchema.businessId,
+			"dataType": "String.businessId"
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": vars.flowContext.messageSchema.messageType,
+			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                    <ee:transform doc:name="accumulate result" doc:id="dd84eab3-bf32-4a15-b266-ee4c02f4ddf1">
+                        <ee:message />
+                        <ee:variables>
+                            <ee:set-variable variableName="accumulator"><![CDATA[vars.accumulator + payload]]></ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+                </foreach>
+                <set-payload value="#[vars.accumulator]" doc:name="Set Payload" doc:id="51421887-6ea9-4513-8a2f-ac55414585ea" />
+            </otherwise>
+        </choice>
+        <logger level="INFO" doc:name="Log actual send-message-batch request" doc:id="c8506409-093e-4efc-8e44-8c39c41fa8b7" message="======== actual send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <sqs:send-message-batch doc:name="Send message batch" doc:id="1a3b5fb5-ca6d-4247-a98e-8f27a7e812bc" config-ref="Amazon_SQS_Configuration" queueUrl="#[vars.queueUrl]" />
+        <java:invoke-static method="convertBatchResultObjectToJson(Object)" doc:name="Invoke static convertBatchResultObjectToJson Method" doc:id="1dcf2831-3afc-467b-a345-6ce85efe57b6" class="com.dev.utils.ObjectToJson">
+            <java:args><![CDATA[#[{obj: payload}]]]></java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="payload" doc:id="068b41c6-1887-40cd-a754-2d4055656f39">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+read(payload,"application/json")]]></ee:set-payload>
+            </ee:message>
+            <ee:variables />
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="cacf9c69-986c-4a92-9c52-3657c925b3cc" message="========Log send-message-batch response #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+    </flow>
+    <flow name="post:\v1\send-message\purchaseorder:application\json:ecom-order-ext-eapi-config">
+        <flow-ref doc:name="Flow Reference to publish-purchaseorder-to-topic-flow" doc:id="4400434d-e191-4a7f-ae38-5959eea2ab93" name="publish-purchaseorder-to-topic-flow" />
+    </flow>
+    <flow name="post:\v1\send-message-batch\purchaseorder:application\json:ecom-order-ext-eapi-config" doc:id="bc88d253-11e2-4bd1-bfd5-5d1699e6b41e">
+        <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.flowContext.messageSchema.correlationId default correlationId,&#xA;  &quot;businessId&quot;: vars.flowContext.messageSchema.businessId default correlationId,&#xA;  &quot;messageType&quot;: vars.flowContext.messageSchema.messageType default &quot;purchaseorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="badbda65-cf66-4c9d-9c86-9c7745c436ed" variableName="flowContext" />
+        <logger level="INFO" doc:name="Log Request" doc:id="15cf8640-18f4-43a2-a11f-a07706c9e557" message="========Received send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <set-variable value="#[payload.Queue.queueUrl]" doc:name="Set queueUrl" doc:id="c11d3199-9c7b-4c33-914f-9e805e95a594" variableName="queueUrl" />
+        <set-variable value="#[[]]" doc:name="accumulator" doc:id="1c79bbed-1c72-4e8b-80af-18c34c0b723e" variableName="accumulator" />
+        <foreach doc:name="For Each" doc:id="be65b4ad-20ae-4a71-9847-0d1d9222b2db" collection="#[payload.Message]">
+            <ee:transform doc:name="Form Request as POJO" doc:id="a6136065-53e9-452e-aae2-0d37eedfea87">
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{	
+	body: payload.body,
+	deduplicationId: null,
+	delaySeconds: null,
+	groupId: null,
+	id: payload.id,
+	receiptHandle: null
+} as Object {
+	class : "org.mule.extension.sqs.api.model.Message"
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+            <ee:transform doc:name="accumulate result" doc:id="d1065402-acdc-4721-b0b2-c9853ad54e27">
+                <ee:message />
+                <ee:variables>
+                    <ee:set-variable variableName="accumulator"><![CDATA[vars.accumulator + payload]]></ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </foreach>
+        <set-payload value="#[vars.accumulator]" doc:name="Set Payload" doc:id="489ad60b-5801-4431-ae2a-ec5a5bb3df11" />
+        <logger level="INFO" doc:name="Log actual send-message-batch request" doc:id="6633c2f0-61d0-448b-a2be-77749a69f56f" message="======== actual send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+        <sqs:send-message-batch doc:name="Send message batch" doc:id="e437201f-1bf5-4270-99c1-9f273f45f943" config-ref="Amazon_SQS_Configuration" queueUrl="#[vars.queueUrl]" />
+        <java:invoke-static method="convertBatchResultObjectToJson(Object)" doc:name="Invoke static convertBatchResultObjectToJson Method" doc:id="907de63b-125a-408b-bc88-b8c9c02780ab" class="com.dev.utils.ObjectToJson">
+            <java:args><![CDATA[#[{obj: payload}]]]></java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="payload" doc:id="ee5b351d-ec6b-4d02-8e10-cb3cd49e49c4">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+read(payload,"application/json")]]></ee:set-payload>
+            </ee:message>
+            <ee:variables />
+        </ee:transform>
+        <logger level="INFO" doc:name="Log Response" doc:id="a392bd9e-8eeb-4560-999c-0e58114bb26e" message="========Log send-message-batch response #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+    </flow>
+    <flow name="get:\v1\reprocess\salesorder-customer:ecom-order-ext-eapi-config">
+        <set-variable value="#[attributes.queryParams.strategy]" doc:name="Set strategy" doc:id="d8cedea9-d125-4591-86ee-09f481cd169a" variableName="strategy" />
+        <choice doc:name="Choice" doc:id="bdb282f4-fe77-4cde-a293-877602a9dcec">
+            <when expression="#[vars.strategy == &quot;mule-sqs&quot;]">
+                <logger level="INFO" doc:name="mule-sqs based reprocessing" doc:id="b8f7c2db-4192-4138-9335-d4db425225da" message="====== mule-sqs based reprocessing" />
+                <flow-ref doc:name="Flow Reference to reprocess-salesorder-dlq-flow" doc:id="6a5025f7-852a-4e72-9270-3d5ab2797aa3" name="reprocess-salesorder-dlq-flow" />
+            </when>
+            <when expression="#[vars.strategy == &quot;mule-java&quot;]">
+                <logger level="INFO" doc:name="mule-java based reprocessing" doc:id="7f2cac8e-ecf0-4855-98cb-973850474275" message="====== mule-java based reprocessing" />
+                <flow-ref doc:name="Flow Reference to rreprocess-salesorder-java-based-dlq-flow" doc:id="8864be4f-795b-487d-a8eb-f11d2d020f80" name="reprocess-salesorder-java-based-dlq-flow" />
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="mule-lambda based reprocessing" doc:id="7a037a41-a557-46ae-bc1d-0501df63e853" message="====== mule-lambda based reprocessing" />
+                <flow-ref doc:name="Flow Reference to reprocess-salesorder-lambda-dlq-flow" doc:id="7466ff42-3f24-4410-8b9b-bce957f42f18" name="reprocess-salesorder-lambda-dlq-flow" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="get:\v1\reprocess\returnorder-item-ext:ecom-order-ext-eapi-config">
+        <flow-ref doc:name="Flow Reference to reprocess-retrunorder-dlq-flow" doc:id="8583c454-e66d-468d-a455-a67938421dba" name="reprocess-returnorder-dlq-flow" />
+    </flow>
+    <flow name="get:\v1\reprocess\purchaseorder:ecom-order-ext-eapi-config">
+        <flow-ref doc:name="Flow Reference to reprocess-purchaseorder-dlq-flow" doc:id="14c92035-56c5-489f-9452-fa8379965e0e" name="reprocess-purchaseorder-dlq-flow" />
+    </flow>
+</mule>

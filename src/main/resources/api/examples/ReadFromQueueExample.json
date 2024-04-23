@@ -1,0 +1,9 @@
+{
+    "Queue": {
+        "queueUrl": "https://sqs.ap-southeast-2.amazonaws.com/590183942957/salesorder-customer-queue"
+    },
+	"Attributes": {
+        "MaxNumberOfMessages": 2,
+        "WaitTime": 3
+  }
+}

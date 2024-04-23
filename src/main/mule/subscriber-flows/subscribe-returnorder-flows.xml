@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing"
+	xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+	<flow name="subscribe-returnorder-to-item-ext-flow" doc:id="17430107-a9cd-41b7-9486-76d97fc8254b">
+		<sqs:receivemessages doc:name="Receive messages" doc:id="cfb39f12-b89d-4057-b5ba-fbd1fb36d046" config-ref="Amazon_SQS_Configuration" preserveMessages="true" queueUrl="${aws.sqs.queue.returnorder-item-ext.url}"/>
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="37bc7565-e483-47d7-a6d2-88c3bad2f38f" correlationId="#[attributes.correlationId.stringValue default correlationId]">
+			<flow-ref doc:name="Flow Reference to returnorder-to-item-ext-sub-flow" doc:id="93bd2fdd-c5aa-4d15-805e-0872c9f206b0" name="returnorder-to-item-ext-sub-flow"/>
+		</tracing:with-correlation-id>
+		<error-handler ref="auto-dlq-redirect-error-handler">
+		</error-handler>
+	</flow>
+	<sub-flow name="returnorder-to-item-ext-sub-flow" doc:id="9c2912df-2acf-4f0f-9f0b-7f90df94512c">
+		<ee:transform doc:name="set flow and context variables" doc:id="bd81c0f4-c093-4242-b913-296d01255b5e">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="receiptHandle"><![CDATA[attributes."sqs.message.receipt.handle"]]></ee:set-variable>
+				<ee:set-variable variableName="queueUrl"><![CDATA[%dw 2.0
+output application/java
+---
+p('aws.sqs.queue.returnorder-item-ext.url')]]></ee:set-variable>
+				<ee:set-variable variableName="path"><![CDATA[%dw 2.0
+output application/java
+---
+p('http.request.item-ext.path')]]></ee:set-variable>
+				<ee:set-variable variableName="entryTime"><![CDATA[%dw 2.0
+output application/java
+---
+now()]]></ee:set-variable>
+				<ee:set-variable variableName="flowContext" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"messageSchema": {
+		"correlationId": correlationId,
+		"businessId": attributes.businessId.stringValue default correlationId,
+		"messageType": attributes.messageType.stringValue
+	}
+}]]></ee:set-variable>
+				<ee:set-variable variableName="messageId" ><![CDATA[attributes."sqs.message.id"]]></ee:set-variable>
+				<ee:set-variable variableName="approximateReceiveCount" ><![CDATA[attributes."ApproximateReceiveCount"]]></ee:set-variable>
+			
+</ee:variables>
+		</ee:transform>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="04db4254-a675-47cd-987b-c6cfaf4dd943" />
+		<logger level="INFO" doc:name="Log Request" doc:id="4302e885-bf30-4e62-b011-170e91e183ed" message="======= Subscribed from returnorder-item-ext-queue,RO number #[payload.data.order_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
+		<logger level="INFO" doc:name="Log queue attributes" doc:id="a2db227b-f7dd-49cd-958b-e1c3ba4c7db2" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
+		<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="40624d54-83e1-4922-896b-ef822d779b96" name="common-oms-backend-service-sub-flow" />
+		<choice doc:name="Check if visibility timeout has lapsed or not" doc:id="30472461-5ea5-479a-9eb6-24a0b0faaaca">
+			<when expression="#[%dw 2.0&#10;import * from dw::core::Periods&#10;output application/json&#10;&#10;fun format(d: DateTime) = ( d &gt;&gt; &quot;IST&quot; ) as String {format: &quot;yyyy-MM-dd'T'HH:mm:ss&quot;} &#10;&#10;---&#10;( (format(now()) - format(vars.entryTime)) as Number { unit : &quot;seconds&quot;} ) &gt; 22]">
+				<logger level="INFO" doc:name="visibility timout lapsed or moments (seconds) close to lapse" doc:id="05a7bb51-ed4e-411c-b4f7-3025aaaee0e3" message="======= Visibility timout lapsed or moments (seconds) close to lapse | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+				<sqs:change-message-visibility doc:name="Change message visibility" doc:id="c52c9929-a587-4afd-a8fe-6fab85ec1bb8" config-ref="Amazon_SQS_Configuration" receiptHandle="#[vars.receiptHandle]" visibilityTimeout="40" queueUrl="#[vars.queueUrl]" />
+				<logger level="INFO" doc:name="visiblity timeout extended" doc:id="308953cd-9823-4020-90cd-514b7845de45" message="=======  Message Visiblity timeout extended by 40 seconds | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="visibility timout has not lapsed " doc:id="10d9e95b-c6f0-4631-b251-ade1a9e2c258" message="======= Visibility timout has not lapsed , continue processsing | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ================= " />
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Form delete-message request" doc:id="19f0f818-a148-4e5f-96a8-f4bcc7bf0b6e">
+			<ee:message>
+				<ee:set-payload><![CDATA[{
+    "Queue": {
+        "queueUrl": vars.queueUrl
+    },
+    "Attributes":{
+         "ReceiptHandle": vars.receiptHandle
+    }
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<sqs:delete-message doc:name="Delete message from src queue" doc:id="c611a065-0dc1-42d7-ac8a-43721a50a78b" config-ref="Amazon_SQS_Configuration" receiptHandle="#[payload.Attributes.ReceiptHandle]" queueUrl="#[payload.Queue.queueUrl]" target="deleteMessageResponse" />
+		<logger level="INFO" doc:name="message deleted from src queue" doc:id="fc5d6cd5-92a5-45fd-a879-e40f14b717b7" message="======= message deleted from src queue: #[vars.queueUrl] | messageId from delete-message operation: #[vars.deleteMessageResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+		<ee:transform doc:name="set response" doc:id="d3351f44-68a6-4ace-87c4-55c20632df05">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 200,
+	"response": vars.omsBackendResponse
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="flow end" doc:id="b326571f-45d3-4f3f-96b7-d9a20ada014e" message="======= flow processing end : #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] =================" />
+	
+</sub-flow>
+	
+</mule>

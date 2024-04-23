@@ -1,0 +1,6 @@
+[
+    "https://sqs.ap-southeast-2.amazonaws.com/590183942957/purchaseorder-product-dlq",
+    "https://sqs.ap-southeast-2.amazonaws.com/590183942957/purchaseorder-product-queue",
+    "https://sqs.ap-southeast-2.amazonaws.com/590183942957/purchaseorder-shipping-dlq",
+    "https://sqs.ap-southeast-2.amazonaws.com/590183942957/purchaseorder-shipping-queue"
+]

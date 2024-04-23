@@ -1,0 +1,55 @@
+{
+    "template": "purchase_order",
+    "data": {
+        "po_number": "1742",
+        "po_date": "09/01/2020",
+        "company": {
+            "name": "360 Footwear",
+            "address": "787 Brunswick, Los Angeles, CA 50028",
+            "contact": "support@360footwear.co / 4444 555 555",
+            "website": "360footwear.co"
+        },
+        "vendor": {
+            "name": "Casey Williams",
+            "address1": "Wholesale NY",
+            "address2": "57 Parkway, 5th Floor",
+            "address3": "New York, NY 10013",
+            "telephone": "+1 212-608-5983"
+        },
+        "ship_to": {
+            "name": "Claire Simms",
+            "address1": "360 Footwear",
+            "address2": "787 Brunswick",
+            "address3": "Los Angeles, CA 50028",
+            "telephone": "+1 4444-555-555"
+        },
+        "requested_by": "Claire Simms",
+        "ship_via": "FedEx",
+        "delivery_date": "09/01/2020",
+        "payment_terms": "Net 30 Days",
+        "lines": [
+            {
+                "item": "Pursuit Running Shoes",
+                "description": "Men's Pursuit Running Shoes - 10/M",
+                "quantity": "10",
+                "unit_price": "59.50",
+                "total": "595.00"
+            },
+            {
+                "item": "Shelby Boots",
+                "description": "Men's Shelby Leather Boots - 10/M",
+                "quantity": "10",
+                "unit_price": "39.50",
+                "total": "395.00"
+            }
+        ],
+        "subtotal": "$990.00",
+        "sales_tax": "$59.40",
+        "sales_tax_percentage": "6%",
+        "shipping": "$37.88",
+        "other": "$0.00",
+        "total": "$1087.28",
+        "comments": "Payment terms 30 days.",
+        "color": "#000000"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "Queue": {
+        "queueUrl": "https://sqs.ap-southeast-2.amazonaws.com/590183942957/purchaseorder-shipping-queue"
+    },
+    "Attributes": {
+        "Policy": {
+            "Id": "SNS-SQS-Policy: arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-shipping-queue",
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "topic-subscription- arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic",
+                    "Action": [
+                        "sqs:SendMessage"
+                    ],
+                    "Effect": "Allow",
+                    "Resource": "arn:aws:sqs:ap-southeast-2:590183942957:purchaseorder-shipping-queue",
+                    "Condition": {
+                        "ArnLike": {
+                            "aws:SourceArn": "arn:aws:sns:ap-southeast-2:590183942957:purchaseorder-topic"
+                        }
+                    },
+                    "Principal": {
+                        "AWS": "*"
+                    }
+                }
+            ]
+        }
+    }
+}
