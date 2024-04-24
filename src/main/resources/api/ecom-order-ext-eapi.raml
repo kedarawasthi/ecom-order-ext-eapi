@@ -1,6 +1,6 @@
 #%RAML 1.0
 title: ecom-order-ext-eapi
-version: v2
+version: v1
 
 documentation:
   - title: eCommerce Orders Extension Experience API
@@ -24,6 +24,15 @@ protocols:
   - HTTPS
 
 /v1:
+  /health-check:
+    get:
+      displayName: health-check
+      description: health of api
+      responses:
+        200:
+            body:
+              application/json:
+                example: !include /examples/HealthCheckExample.json
   /create-queue:
     post:
       displayName: create-queue

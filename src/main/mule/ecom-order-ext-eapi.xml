@@ -40,6 +40,19 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
+    <flow name="get:\v1\health-check:ecom-order-ext-eapi-config">
+        <logger level="INFO" doc:name="Logger" doc:id="64b659de-dcb4-4fb2-8bcc-4942b76c5c31" message="=======Received health check request | CorrelationId: #[correlationId]"/>
+		<ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  status: "ecom-order-ext-eapi is up and running"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
     <flow name="post:\v1\create-queue:application\json:ecom-order-ext-eapi-config">
         <logger level="INFO" doc:name="Log Request" doc:id="43282893-4e1b-432e-a248-bd0094252386" message="=======Received create-queue request: #[payload] | CorrelationId: #[correlationId]" />
         <ee:transform doc:name="serialize attribute objects" doc:id="221537bc-2710-4710-8ec1-7f11a47d6137">
@@ -654,4 +667,5 @@ read(payload,"application/json")]]></ee:set-payload>
     <flow name="get:\v1\reprocess\purchaseorder:ecom-order-ext-eapi-config">
         <flow-ref doc:name="Flow Reference to reprocess-purchaseorder-dlq-flow" doc:id="14c92035-56c5-489f-9452-fa8379965e0e" name="reprocess-purchaseorder-dlq-flow" />
     </flow>
+    
 </mule>

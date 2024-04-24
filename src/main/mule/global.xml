@@ -37,7 +37,7 @@ http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/sc
 		<http:request-connection protocol="${http.request.aws-ec2.protocol}" host="${http.request.aws-ec2.host}" port="${http.request.aws-ec2.port}" />
 	</http:request-config>
 	<http:listener-config name="ecom-order-ext-eapi-httpListenerConfig">
-        <http:listener-connection host="${http.listener.host}" port="${http.listener.port}" />
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     <apikit:config name="ecom-order-ext-eapi-config" api="ecom-order-ext-eapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 </mule>
