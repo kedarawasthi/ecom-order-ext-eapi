@@ -166,7 +166,7 @@
 		<dependency>
 			<groupId>com.mulesoft.connectors</groupId>
 			<artifactId>mule-servicenow-connector</artifactId>
-			<version>6.15.0</version>
+			<version>6.16.0</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
 	</dependencies>

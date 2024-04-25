@@ -42,6 +42,6 @@ http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mu
     </http:listener-config>
     <apikit:config name="ecom-order-ext-eapi-config" api="ecom-order-ext-eapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<servicenow:config name="ServiceNow_Config" doc:name="ServiceNow Config" doc:id="57d63999-4152-4137-ad1e-f5b76e022abe" >
-		<servicenow:basic-connection username="${snow.username}" password="${snow.password}" serviceAddress="${snow.address}" />
+		<servicenow:basic-connection username="${secure::snow.username}" password="${secure::snow.password}" serviceAddress="${snow.address}" />
 	</servicenow:config>
 </mule>
