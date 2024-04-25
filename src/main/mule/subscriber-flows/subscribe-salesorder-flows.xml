@@ -56,7 +56,7 @@ output application/json
 		<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="fe0861ea-67a0-4c54-8aa9-ac62a562b412" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
 		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="f6791983-25a6-4823-8ce1-b4c24a8ec0de" />
 		<logger level="INFO" doc:name="Log Request" doc:id="507984ff-51b0-47d3-bdb5-d5c3062becbb" message="======= Subscribed from salesorder-customer-queue, BusinessUnitName #[payload.BusinessUnitName] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
-		<logger level="INFO" doc:name="Log queue attributes" doc:id="a4a8956e-4c52-41ca-817e-188d651e7efc" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] | -----------------' />
+		<logger level="INFO" doc:name="Log queue attributes" doc:id="a4a8956e-4c52-41ca-817e-188d651e7efc" message='---------------- ApproximateReceiveCount: #[vars.approximateReceiveCount] | MessageId: #[vars.messageId] | ReceiptHandle: #[vars.receiptHandle] | -----------------' />
 		<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="9f58894f-da57-41a1-b56f-03be91bcb4a9" name="common-oms-backend-service-sub-flow" />
 		<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="06e02c1c-851a-4434-89ea-bc505404fa39" name="deduplication-os-update-subroutine"/>
 		<ee:transform doc:name="Form delete-message request" doc:id="0e0bebb2-9fe9-4f8e-8275-bf12d113a149">

@@ -12,7 +12,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<app.runtime>4.6.2</app.runtime>
+		<app.runtime>4.6-java8</app.runtime>
 		<mule.maven.plugin.version>4.1.0</mule.maven.plugin.version>
 	</properties>
 
@@ -30,22 +30,22 @@
 				<extensions>true</extensions>
 				<configuration>
 					<cloudHubDeployment>
-				      <uri>https://anypoint.mulesoft.com</uri>
-				      <muleVersion>${app.runtime}</muleVersion>
-				      <server>anypoint-exchange-v3</server>
-				      <applicationName>${applicationName}</applicationName>
-				      <environment>${environment}</environment>
-				      <region>${region}</region>
-				      <workers>${workers}</workers>
-				      <workerType>${workerType}</workerType>
-				      <objectStoreV2>true</objectStoreV2>
-				      <properties>
-						 <env>${env}</env>
-						 <anypoint.clientId>${anypoint.clientId}</anypoint.clientId>
-				      	 <anypoint.clientSecret>${anypoint.clientSecret}</anypoint.clientSecret>
-						 <key>${key}</key>
-					  </properties>
-				    </cloudHubDeployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<muleVersion>${app.runtime}</muleVersion>
+						<server>anypoint-exchange-v3</server>
+						<applicationName>${applicationName}</applicationName>
+						<environment>${environment}</environment>
+						<region>${region}</region>
+						<workers>${workers}</workers>
+						<workerType>${workerType}</workerType>
+						<objectStoreV2>true</objectStoreV2>
+						<properties>
+							<env>${env}</env>
+							<anypoint.clientId>${anypoint.clientId}</anypoint.clientId>
+							<anypoint.clientSecret>${anypoint.clientSecret}</anypoint.clientSecret>
+							<key>${key}</key>
+						</properties>
+					</cloudHubDeployment>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -163,17 +163,21 @@
 			<version>1.2.7</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.connectors</groupId>
+			<artifactId>mule-servicenow-connector</artifactId>
+			<version>6.15.0</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
 	</dependencies>
-	
-	  <distributionManagement>
-	    <repository>
-	      <id>anypoint-exchange-v3</id>
-	      <name>Corporate Repository</name>
-	      <url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${groupId}/maven</url>
-	      <layout>default</layout>
-	    </repository>
-  	  </distributionManagement>
-	
+	<distributionManagement>
+		<repository>
+			<id>anypoint-exchange-v3</id>
+			<name>Corporate Repository</name>
+			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${groupId}/maven</url>
+			<layout>default</layout>
+		</repository>
+	</distributionManagement>
 	<repositories>
 		<repository>
 			<id>anypoint-exchange-v3</id>

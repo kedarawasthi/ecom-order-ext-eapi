@@ -50,7 +50,7 @@ output application/json
 			</ee:transform>
 			<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="9e1b1e83-aac1-4ede-afe3-884c5d5e0bba" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
 			<logger level="INFO" doc:name="Log Request" doc:id="cb2e89a3-4dd8-413e-9413-d5f0f1bc0f7b" message="======= Subscribed from purchaseorder-product-queue, PO number #[payload.data.po_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
-			<logger level="INFO" doc:name="Log queue attributes" doc:id="590320f2-aa54-4d71-9c75-783c2afa131f" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
+			<logger level="INFO" doc:name="Log queue attributes" doc:id="590320f2-aa54-4d71-9c75-783c2afa131f" message='---------------- ApproximateReceiveCount: #[vars.approximateReceiveCount] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
 			<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="679f8b52-3bad-4a6a-b25e-f36ec5de9ba7" name="common-oms-backend-service-sub-flow" />
 			<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="75632b7e-cdf1-425b-b0cf-507195458e5d" name="deduplication-os-update-subroutine" />
 			<ee:transform doc:name="Form delete-message request" doc:id="760b72dc-4912-4cd0-b779-c501293d9fa5">
@@ -128,7 +128,7 @@ p('aws.sqs.dlq.purchaseorder.url')]]></ee:set-variable>
 			</ee:transform>
 			<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="b5d715e0-5e08-42d3-897b-fa4712b60114" idExpression='#[vars.messageId ++ "-arc-" ++ vars.approximateReceiveCount]' objectStore="Object_store" />
 			<logger level="INFO" doc:name="Log Request" doc:id="2ae44c35-d573-48ea-ac16-4e618224f56c" message="======= Subscribed from purchaseorder-shipping-queue, PO number: #[payload.data.po_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
-			<logger level="INFO" doc:name="Log queue attributes" doc:id="97d45c7e-3165-446d-9cf2-2791eeb76363" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle]-----------------' />
+			<logger level="INFO" doc:name="Log queue attributes" doc:id="97d45c7e-3165-446d-9cf2-2791eeb76363" message='---------------- ApproximateReceiveCount: #[vars.approximateReceiveCount] | ReceiptHandle: #[vars.receiptHandle]-----------------' />
 			<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="91068c71-5e0e-4d6e-9c66-907925a429a0" name="common-oms-backend-service-sub-flow" />
 			<flow-ref doc:name="Flow Reference to deduplication-os-update-subroutine-subflow" doc:id="28d1f447-33a8-48d9-bf32-fd093cc336e0" name="deduplication-os-update-subroutine" />
 			<ee:transform doc:name="Form delete-message request" doc:id="05fa025c-1852-4c06-861a-b6207343bb41" >

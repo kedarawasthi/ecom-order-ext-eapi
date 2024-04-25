@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
 	<sub-flow name="common-oms-backend-service-sub-flow" doc:id="5702ec98-9c44-4bb7-8e65-54b5bc0dea9b" >
 		<logger level="INFO" doc:name="Before Calling oms-backend service" doc:id="2fa68527-03c8-429c-a03a-9f8ba7de1a84" message="=======  Before Calling oms-backend service | correlationId: #[vars.flowContext.messageSchema.correlationId]  | messageType: #[vars.flowContext.messageSchema.messageType]"/>
-		<http:request method="POST" doc:name="HTTP Request to OMS Backend" doc:id="a88a3c87-7155-456f-ae1e-5b81b55aea84" config-ref="HTTP_Aws_Lambda_OMS_Backend_Request_configuration" path="#[vars.path]" sendCorrelationId="ALWAYS" target="omsBackendResponse" responseTimeout="25000">
+		<http:request method="POST" doc:name="HTTP Request to OMS Backend" doc:id="a88a3c87-7155-456f-ae1e-5b81b55aea84" config-ref="HTTP_Local_OMS_Backend_Request_configuration" path="#[vars.path]" sendCorrelationId="ALWAYS" target="omsBackendResponse" responseTimeout="25000">
 		</http:request>
 		<logger level="INFO" doc:name="After Calling oms-backend service" doc:id="140d875f-c531-414c-903a-832b9dba9531" message="=======  After Calling oms-backend service Response:#[vars.omsBackendResponse] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]" />
 	</sub-flow>

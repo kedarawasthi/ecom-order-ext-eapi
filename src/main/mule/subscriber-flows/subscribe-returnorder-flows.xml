@@ -49,7 +49,7 @@ output application/json
 		</ee:transform>
 		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="04db4254-a675-47cd-987b-c6cfaf4dd943" />
 		<logger level="INFO" doc:name="Log Request" doc:id="4302e885-bf30-4e62-b011-170e91e183ed" message="======= Subscribed from returnorder-item-ext-queue,RO number #[payload.data.order_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
-		<logger level="INFO" doc:name="Log queue attributes" doc:id="a2db227b-f7dd-49cd-958b-e1c3ba4c7db2" message='---------------- ApproximateReceiveCount: #[attributes."ApproximateReceiveCount"] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
+		<logger level="INFO" doc:name="Log queue attributes" doc:id="a2db227b-f7dd-49cd-958b-e1c3ba4c7db2" message='---------------- ApproximateReceiveCount: #[vars.approximateReceiveCount] | ReceiptHandle: #[vars.receiptHandle] -----------------' />
 		<flow-ref doc:name="Call to Backend HTTP Oms Service" doc:id="40624d54-83e1-4922-896b-ef822d779b96" name="common-oms-backend-service-sub-flow" />
 		<choice doc:name="Check if visibility timeout has lapsed or not" doc:id="30472461-5ea5-479a-9eb6-24a0b0faaaca">
 			<when expression="#[%dw 2.0&#10;import * from dw::core::Periods&#10;output application/json&#10;&#10;fun format(d: DateTime) = ( d &gt;&gt; &quot;IST&quot; ) as String {format: &quot;yyyy-MM-dd'T'HH:mm:ss&quot;} &#10;&#10;---&#10;( (format(now()) - format(vars.entryTime)) as Number { unit : &quot;seconds&quot;} ) &gt; 22]">
