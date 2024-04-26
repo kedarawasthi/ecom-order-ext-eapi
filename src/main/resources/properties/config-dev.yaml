@@ -92,8 +92,6 @@ http:
   
     
 snow:
-  username: "admin"
-  password: "r!XgJ9nBO/2c"
   address: "https://dev191862.service-now.com/"
   version: "WASHINGTON" 
    

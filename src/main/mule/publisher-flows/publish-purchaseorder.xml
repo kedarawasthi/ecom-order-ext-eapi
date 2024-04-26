@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/sns http://www.mulesoft.org/schema/mule/sns/current/mule-sns.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="publish-purchaseorder-to-topic-flow" doc:id="7686d40b-c6d7-48f5-8bbd-3aa8b8660be0" >
-		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "purchaseorder"&#10;	}&#10;}]' doc:name="Set FlowContext" doc:id="9e79fd5b-6994-4dcc-9d19-5e0f90098bd6" variableName="flowContext" />
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "purchaseorder",&#10;		"host": attributes.headers.ec2host&#10;	}&#10;}]' doc:name="Set FlowContext" doc:id="9e79fd5b-6994-4dcc-9d19-5e0f90098bd6" variableName="flowContext" />
 		<logger level="INFO" doc:name="Log Request" doc:id="c46f6828-113a-46f9-8482-aa3d01dbccc9" message="Received purchaseorder request: PO Number #[payload.Message.data.po_number] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]" />
 		<set-variable value="#[payload.Topic.topicArn]" doc:name="topicArn" doc:id="be1a5f9d-da60-49ae-9661-5e2755992de4" variableName="topicArn" />
 		<set-variable value='#[write(payload.Message,"application/json")]' doc:name="messageBody" doc:id="52896f53-5edf-417f-89b1-196c8ef15dc0" variableName="messageBody" />

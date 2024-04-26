@@ -6,7 +6,7 @@
 http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="publish-salesorder-to-queue-flow" doc:id="49be2f01-faf0-4cf5-afca-524010d6753e" >
-		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "salesorder"&#10;	}&#10;}]' doc:name="Set FlowContext" doc:id="3610bf22-24be-49be-856e-942ac0ffd636" variableName="flowContext" />
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"messageSchema": {&#10;		"correlationId": correlationId,&#10;		"businessId": correlationId,&#10;		"messageType": "salesorder",&#10;		"host": attributes.headers.ec2host&#10;	}&#10;}]' doc:name="Set FlowContext" doc:id="3610bf22-24be-49be-856e-942ac0ffd636" variableName="flowContext" />
 		<logger level="INFO" doc:name="Log Request" doc:id="cfa070f5-e8ed-4a1e-b3fd-82a489f1605d" message="=======Received salesorder request, BusinessUnitName: #[payload.Message.BusinessUnitName]  | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]============" />
 		<set-variable value="#[payload.Queue.queueUrl]" doc:name="queueUrl" doc:id="42034c0c-e6ae-46bb-a3d4-53c41a60b980" variableName="queueUrl" />
 		<set-variable value='#[write(payload.Message,"application/json")]' doc:name="messageBody" doc:id="a44ff0a1-a2af-4da8-a65b-85bb4f881505" variableName="messageBody" />
@@ -37,6 +37,12 @@ output application/java
 		"messageType": {
 			"stringValue": vars.flowContext.messageSchema.messageType,
 			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": vars.flowContext.messageSchema.host,
+			"dataType": "String.host"
 		} as Object {
 			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		}

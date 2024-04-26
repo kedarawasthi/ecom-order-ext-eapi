@@ -337,7 +337,7 @@ vars.accumulator]]></ee:set-payload>
         <flow-ref doc:name="Flow Reference to publish-salesorder-to-queue-flow" doc:id="87124ece-b6ee-4ad6-b151-e18ac1a95094" name="publish-salesorder-to-queue-flow" />
     </flow>
     <flow name="post:\v1\send-message-batch\salesorder:application\json:ecom-order-ext-eapi-config" doc:id="e64ec82a-ba81-468b-abe3-b956bfdd198b">
-        <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.flowContext.messageSchema.correlationId default correlationId,&#xA;  &quot;businessId&quot;: vars.flowContext.messageSchema.businessId default correlationId,&#xA;  &quot;messageType&quot;: vars.flowContext.messageSchema.messageType default &quot;salesorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="dd629723-a2c4-49b5-8982-d4400adb0e6d" variableName="flowContext" />
+        <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.flowContext.messageSchema.correlationId default correlationId,&#10;  "businessId": vars.flowContext.messageSchema.businessId default correlationId,&#10;  "messageType": vars.flowContext.messageSchema.messageType default "salesorder"&#10; }&#10;}]' doc:name="Set flowContext" doc:id="dd629723-a2c4-49b5-8982-d4400adb0e6d" variableName="flowContext" />
         <logger level="INFO" doc:name="Log Request" doc:id="5ef0d859-ae0e-46ab-aabe-3183b6e67bd8" message="========Received send-message-batch request #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType]======= " />
         <set-variable value="#[payload.Queue.queueUrl]" doc:name="Set queueUrl" doc:id="54e592e0-ba0e-4395-9b5f-eb849e200aa4" variableName="queueUrl" />
         <choice doc:name="check if messages are from dlq or not" doc:id="f3ef8097-2ca4-4338-8657-3f0c732fd819">
@@ -373,6 +373,12 @@ output application/java
 			"dataType": payload.messageAttributes.messageType.dataType
 		} as Object {
 			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": payload.messageAttributes.host.stringValue,
+			"dataType": payload.messageAttributes.host.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		}
 	} as Object {
 		class: "java.util.HashMap"
@@ -396,7 +402,7 @@ output application/java
                 <set-variable value="#[[]]" doc:name="accumulator" doc:id="34008f4b-8e70-4c02-b5e3-7287cff681e1" variableName="accumulator" />
                 <foreach doc:name="For Each" doc:id="4043c842-f1db-4a58-abe4-94b717caac3f" collection="#[payload.Message]">
                     <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1d344a8a-0636-4d3e-b15d-33f5a5405900" variableName="uid" />
-                    <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.uid,&#xA;  &quot;businessId&quot;: vars.uid,&#xA;  &quot;messageType&quot;: &quot;salesorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="23d25f79-1175-4575-9cdc-c8f75c7dadb1" variableName="flowContext" />
+                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "salesorder",&#10;  "host": attributes.headers.ec2host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="23d25f79-1175-4575-9cdc-c8f75c7dadb1" variableName="flowContext" />
                     <ee:transform doc:name="Form Request as POJO" doc:id="7383ff7d-b446-4263-8259-580bdc49cdec">
                         <ee:message>
                             <ee:set-payload><![CDATA[%dw 2.0
@@ -425,6 +431,12 @@ var messageBody = write(payload,"application/json")
 		"messageType": {
 			"stringValue": vars.flowContext.messageSchema.messageType,
 			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": vars.flowContext.messageSchema.host,
+			"dataType": "String.host"
 		} as Object {
 			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		}
@@ -504,6 +516,12 @@ var temp = read(payload.body,"application/json")
 			"dataType": payload.messageAttributes.messageType.dataType
 		} as Object {
 			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": payload.messageAttributes.host.stringValue,
+			"dataType": payload.messageAttributes.host.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		}
 	} as Object {
 		class: "java.util.HashMap"
@@ -527,7 +545,7 @@ var temp = read(payload.body,"application/json")
                 <set-variable value="#[[]]" doc:name="accumulator" doc:id="759cc6f7-2baf-4c69-97c9-b1facc1bc2a7" variableName="accumulator" />
                 <foreach doc:name="For Each" doc:id="215186f7-f509-42e2-8132-f303f98de972" collection="#[payload.Message]">
                     <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1ce52dd4-eb85-4a55-b27b-75daeb59d118" variableName="uid" />
-                    <set-variable value="#[%dw 2.0&#xA;output application/json&#xA;---&#xA;{&#xA; &quot;messageSchema&quot;: {&#xA;  &quot;correlationId&quot;: vars.uid,&#xA;  &quot;businessId&quot;: vars.uid,&#xA;  &quot;messageType&quot;: &quot;returnorder&quot;&#xA; }&#xA;}]" doc:name="Set flowContext" doc:id="9b917edd-e1ae-45cc-a6d2-d85013bd4928" variableName="flowContext" />
+                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "returnorder",&#10;  "host": attributes.headers.ec2host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="9b917edd-e1ae-45cc-a6d2-d85013bd4928" variableName="flowContext" />
                     <ee:transform doc:name="Form Request as POJO" doc:id="96fce1b7-97d9-4cc9-b9f2-5238dab2b9ea">
                         <ee:message>
                             <ee:set-payload><![CDATA[%dw 2.0
@@ -556,6 +574,12 @@ var messageBody = write(payload,"application/json")
 		"messageType": {
 			"stringValue": vars.flowContext.messageSchema.messageType,
 			"dataType": "String.messageType"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": vars.flowContext.messageSchema.host,
+			"dataType": "String.host"
 		} as Object {
 			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		}
@@ -614,7 +638,36 @@ output application/java
 	delaySeconds: null,
 	groupId: null,
 	id: payload.id,
-	receiptHandle: null
+	messageAttributes: {
+		"correlationId": {
+			"stringValue": payload.messageAttributes.correlationId.stringValue,
+			"dataType": payload.messageAttributes.correlationId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"businessId": {
+			"stringValue": payload.messageAttributes.businessId.stringValue,
+			"dataType": payload.messageAttributes.businessId.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"messageType": {
+			"stringValue": payload.messageAttributes.messageType.stringValue,
+			"dataType": payload.messageAttributes.messageType.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
+		"host": {
+			"stringValue": payload.messageAttributes.host.stringValue,
+			"dataType": payload.messageAttributes.host.dataType
+		} as Object {
+			class: "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		}
+	} as Object {
+		class: "java.util.HashMap"
+	},
+	receiptHandle: null,
+	
 } as Object {
 	class : "org.mule.extension.sqs.api.model.Message"
 }]]></ee:set-payload>

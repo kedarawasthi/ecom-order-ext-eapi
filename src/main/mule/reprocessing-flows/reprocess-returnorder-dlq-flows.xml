@@ -127,6 +127,7 @@ output application/json
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="reprocessing flow end" doc:id="2d392a7a-4ec2-443a-a6f6-0431f17d70cc" message="======= reprocessing flow end #[payload] | correlationId: #[vars.flowContext.messageSchema.correlationId] | messageType: #[vars.flowContext.messageSchema.messageType] ======" />
 		<error-handler >
 			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="733af66e-a145-407c-8a6c-39266f6b3cf2" type="ANY" >
 				<logger level="INFO" doc:name="log error" doc:id="c8206978-ad82-4109-92aa-e72b58c7975a" message="======== Error: #[error.description] | Details: #[error.detailedDescription]  | correlationId: #[vars.flowContext.messageSchema.correlationId] | businessId: #[vars.flowContext.messageSchema.businessId] | messageType: #[vars.flowContext.messageSchema.messageType] ==========" />

@@ -45,7 +45,8 @@ output application/json
 	"messageSchema": {
 		"correlationId": correlationId,
 		"businessId": attributes.businessId.stringValue default correlationId,
-		"messageType": attributes.messageType.stringValue
+		"messageType": attributes.messageType.stringValue,
+		"host": attributes.host.stringValue default ""
 	}
 }]]></ee:set-variable>
 				<ee:set-variable variableName="messageId" ><![CDATA[attributes."sqs.message.id"]]></ee:set-variable>

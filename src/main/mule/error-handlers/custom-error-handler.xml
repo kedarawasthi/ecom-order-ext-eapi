@@ -135,6 +135,12 @@ var messageBody = write(payload,"application/json")
 		} as Object {
 			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
 		},
+		"host": {
+			"stringValue": vars.flowContext.messageSchema.host,
+			"dataType": "String.host"
+		} as Object {
+			class : "org.mule.extension.sqs.api.model.MessageAttributeValue"
+		},
 		"errorType": {
 			"stringValue": error.errorType.asString,
 			"dataType": "String.errorType"
