@@ -3,11 +3,11 @@
     <flow name="ecom-order-ext-eapi-main">
         <http:listener config-ref="ecom-order-ext-eapi-httpListenerConfig" path="${http.listener.path}">
             <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+                <http:headers><![CDATA[#[{ "correlationId": vars.flowContext.messageSchema.correlationId default correlationId }]]]></http:headers>
             </http:response>
             <http:error-response statusCode="#[vars.httpStatus default 500]">
                 <http:body><![CDATA[#[payload]]]></http:body>
-                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+                <http:headers><![CDATA[#[{ "correlationId": vars.flowContext.messageSchema.correlationId default correlationId }]]]></http:headers>
             </http:error-response>
         </http:listener>
         <apikit:router config-ref="ecom-order-ext-eapi-config" />
