@@ -35,8 +35,8 @@ http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mu
 	<http:request-config name="HTTP_Aws_Lambda_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="e6002889-e152-49e3-85cc-5426baee7925" basePath="${http.request.aws-lambda.basepath}">
 		<http:request-connection host="${http.request.aws-lambda.host}" port="${http.request.aws-lambda.port}" protocol="${http.request.aws-lambda.protocol}"/>
 	</http:request-config>
-	<http:request-config name="HTTP_Aws_EC2_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="7b489c0e-25f7-40ae-9fce-02ec1f16b357" basePath="${http.request.aws-ec2.basepath}">
-		<http:request-connection protocol="${http.request.aws-ec2.protocol}" host="#[vars.flowContext.messageSchema.host]" port="${http.request.aws-ec2.port}" />
+	<http:request-config name="HTTP_Aws_EC2_OMS_Backend_Request_configuration" doc:name="HTTP Request configuration" doc:id="7b489c0e-25f7-40ae-9fce-02ec1f16b357" basePath="${http.request.aws-ec2.basepath}" responseTimeout="20000">
+		<http:request-connection protocol="${http.request.aws-ec2.protocol}" host="#[vars.flowContext.messageSchema.host]" port="${http.request.aws-ec2.port}" connectionIdleTimeout="20000"/>
 	</http:request-config>
 	<http:listener-config name="ecom-order-ext-eapi-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />

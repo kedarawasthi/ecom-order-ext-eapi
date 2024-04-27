@@ -85,7 +85,7 @@ output application/json
 		<error-handler ref="manual-dlq-redirect-error-handler">
 		</error-handler>
 	</flow>
-	<flow name="subscribe-purchaseorder-to-shipping-service-flow" doc:id="54d296ba-40f5-4d6d-abfb-4c36ed2f56a5" initialState="stopped">
+	<flow name="subscribe-purchaseorder-to-shipping-service-flow" doc:id="54d296ba-40f5-4d6d-abfb-4c36ed2f56a5">
 		<sqs:receivemessages doc:name="Receive messages" doc:id="8e8384c1-e717-4c44-95a7-f5473e5af6d3" config-ref="Amazon_SQS_Configuration" preserveMessages="true" queueUrl="${aws.sqs.queue.purchaseorder-shipping.url}" />
 		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;read(payload,"application/json")]' doc:name="Set Payload" doc:id="bd5d4357-6aaa-44fb-9b24-3b090f524277" />
 		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="a1f3e03d-bc08-4b2e-a342-489e64f685d9" correlationId="#[payload.MessageAttributes.correlationId.Value default attributes.correlationId.stringValue default correlationId]" >
