@@ -400,9 +400,10 @@ output application/java
             </when>
             <otherwise>
                 <set-variable value="#[[]]" doc:name="accumulator" doc:id="34008f4b-8e70-4c02-b5e3-7287cff681e1" variableName="accumulator" />
-                <foreach doc:name="For Each" doc:id="4043c842-f1db-4a58-abe4-94b717caac3f" collection="#[payload.Message]">
+				<set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;attributes.headers.ec2host]" doc:name="set host" doc:id="b198536c-8366-4452-8f49-65aeb7c39b69" variableName="host"/>
+				<foreach doc:name="For Each" doc:id="4043c842-f1db-4a58-abe4-94b717caac3f" collection="#[payload.Message]">
                     <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1d344a8a-0636-4d3e-b15d-33f5a5405900" variableName="uid" />
-                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "salesorder",&#10;  "host": attributes.headers.ec2host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="23d25f79-1175-4575-9cdc-c8f75c7dadb1" variableName="flowContext" />
+                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "salesorder",&#10;  "host": vars.host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="23d25f79-1175-4575-9cdc-c8f75c7dadb1" variableName="flowContext" />
                     <ee:transform doc:name="Form Request as POJO" doc:id="7383ff7d-b446-4263-8259-580bdc49cdec">
                         <ee:message>
                             <ee:set-payload><![CDATA[%dw 2.0
@@ -543,9 +544,10 @@ var temp = read(payload.body,"application/json")
             </when>
             <otherwise>
                 <set-variable value="#[[]]" doc:name="accumulator" doc:id="759cc6f7-2baf-4c69-97c9-b1facc1bc2a7" variableName="accumulator" />
-                <foreach doc:name="For Each" doc:id="215186f7-f509-42e2-8132-f303f98de972" collection="#[payload.Message]">
+                <set-variable value="#[%dw 2.0&#10;output application/java&#10;---&#10;attributes.headers.ec2host]" doc:name="set host" doc:id="1b98df12-3b2b-48d5-ad2d-afa87ab2e4fd" variableName="host" />
+				<foreach doc:name="For Each" doc:id="215186f7-f509-42e2-8132-f303f98de972" collection="#[payload.Message]">
                     <set-variable value="#[uuid()]" doc:name="Set unique id for every iteration" doc:id="1ce52dd4-eb85-4a55-b27b-75daeb59d118" variableName="uid" />
-                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "returnorder",&#10;  "host": attributes.headers.ec2host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="9b917edd-e1ae-45cc-a6d2-d85013bd4928" variableName="flowContext" />
+                    <set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10; "messageSchema": {&#10;  "correlationId": vars.uid,&#10;  "businessId": vars.uid,&#10;  "messageType": "returnorder",&#10;  "host": vars.host&#10; }&#10;}]' doc:name="Set flowContext" doc:id="9b917edd-e1ae-45cc-a6d2-d85013bd4928" variableName="flowContext" />
                     <ee:transform doc:name="Form Request as POJO" doc:id="96fce1b7-97d9-4cc9-b9f2-5238dab2b9ea">
                         <ee:message>
                             <ee:set-payload><![CDATA[%dw 2.0
