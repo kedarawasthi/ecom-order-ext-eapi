@@ -1,3 +1,7 @@
+anypoint:
+  platform:
+    client_id: "![aR+wUvl1CwMH+QWh6THuG4HwLxDCr9Mgho6ugSpuyzQTnXo5cyHi7UH9LPi/hMgP]"
+    client_secret: "![DjkFej5S1T7sU1cVuM+HBYTcX3VqpxtjB9HO1IreDqyn5gGccn9YHWOPWIOySRGX]"
 aws:
   common:
     access-key: "![4fuh/no9HQ5erJ0alV/pfdjrZ5kPhEuz23iZUF+aa84=]"

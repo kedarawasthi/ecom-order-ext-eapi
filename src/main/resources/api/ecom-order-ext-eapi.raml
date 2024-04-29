@@ -6,6 +6,12 @@ documentation:
   - title: eCommerce Orders Extension Experience API
     content: API to cater orchestration of internal material and item extensions
 
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+
 
 types:
   CreateQueueRequestType: !include datatypes/CreateQueueRequestDatatype.raml
@@ -26,6 +32,7 @@ protocols:
 /v1:
   /health-check:
     get:
+      securedBy: [basic]
       displayName: health-check
       description: health of api
       responses:
@@ -35,6 +42,7 @@ protocols:
                 example: !include /examples/HealthCheckExample.json
   /create-queue:
     post:
+      securedBy: [basic]
       displayName: create-queue
       description: Creates a new queue or returns the URL of an existing one.
       body:
@@ -49,6 +57,7 @@ protocols:
   
   /delete-queue:
     delete:
+      securedBy: [basic]
       displayName: delete-queue
       description: Deletes the message queue 
       body:
@@ -62,6 +71,7 @@ protocols:
     
   /delete-message:
     delete:
+      securedBy: [basic]
       displayName: delete-message
       description: Deletes the message from queue with receipt handle 
       body:
@@ -74,6 +84,7 @@ protocols:
                 example: !include /examples/DeleteMessageResponseExample.json  
   /delete-message-batch:
     delete:
+      securedBy: [basic]
       displayName: delete-message-batch
       description: Deletes the messagees from queue with array of receipt handles 
       body:
@@ -87,6 +98,7 @@ protocols:
   
   /get-queue-attributes:
     get:
+      securedBy: [basic]
       displayName: get-queue-attributes
       description: Shows queue attributes to expose the underlying functionality.
       body:
@@ -99,6 +111,7 @@ protocols:
                 example: !include /examples/GetQueueAttributesResponseExample.json
   /get-queue-url:
     get:
+      securedBy: [basic]
       displayName: get-queue-url
       description: Returns the URL of an existing queue.
       body:
@@ -111,6 +124,7 @@ protocols:
                 example: !include /examples/GetQueueUrlResponseExample.json
   /list-dead-letter-source-queues:
     get:
+      securedBy: [basic]
       displayName: list-dead-letter-source-queues
       description: Returns a list of the queues that have the Redrive Policy queue attribute configured with this dead-letter queue.
       body:
@@ -124,6 +138,7 @@ protocols:
   
   /list-queues:
     get:
+      securedBy: [basic]
       displayName: list-queues
       description: Returns a list of queues starting with this prefix.
       queryParameters:
@@ -139,6 +154,7 @@ protocols:
   
   /purge-queue:
     delete:
+      securedBy: [basic]
       displayName: purge-queue
       description: Deletes the messages in a queue specified by the queue URL.
       body:
@@ -151,6 +167,7 @@ protocols:
                 example: !include /examples/PurgeQueueResponseExample.json
   /read:
     get:
+      securedBy: [basic]
       displayName: read
       description: Reads a number of messages from a queue.
       body:
@@ -165,6 +182,7 @@ protocols:
   
   /add-permission:
     post:
+      securedBy: [basic]
       displayName: add-permission
       description: Adds a permission to a message queue.
       body:
@@ -180,6 +198,7 @@ protocols:
 
   /remove-permission:
     delete:
+      securedBy: [basic]
       displayName: remove-permission
       description: Removes a permission from this message queue.
       body:
@@ -193,6 +212,7 @@ protocols:
 
   /set-queue-attributes:
     post:
+      securedBy: [basic]
       displayName: set-queue-attributes
       description: Sets the value of one or more queue attributes, which can take up to 60 seconds to propagate throughout the SQS system (although changes made to the MessageRetentionPeriod attribute can take up to 15 minutes).
       body:
@@ -209,6 +229,7 @@ protocols:
     description: Sends a message to a specified queue or topic. The message must be between 1 and 256K bytes long.
     /salesorder:
       post:
+        securedBy: [basic]
         displayName: send-message
         description: send sales order to downstream customer service
         body:
@@ -222,6 +243,7 @@ protocols:
                   example: !include /examples/SendMessageResponseExample.json
     /returnorder:
       post:
+        securedBy: [basic]
         displayName: send-message
         description: send return order to downstream item extension service
         body:
@@ -235,6 +257,7 @@ protocols:
                   example: !include /examples/SendMessageResponseExample.json
     /purchaseorder:
       post:
+        securedBy: [basic]
         displayName: send-message
         description: publish purchase order to topic to be subscribed by product (inventory) and shipping service
         body:
@@ -250,6 +273,7 @@ protocols:
   /send-message-batch:
     /salesorder:
       post:
+        securedBy: [basic]
         displayName: send-message-batch
         description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
         body:
@@ -263,6 +287,7 @@ protocols:
                   example: !include /examples/SendMessageBatchResponseExample.json
     /returnorder:
       post:
+        securedBy: [basic]
         displayName: send-message-batch
         description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
         body:
@@ -276,6 +301,7 @@ protocols:
                   example: !include /examples/SendMessageBatchResponseExample.json
     /purchaseorder:
       post:
+        securedBy: [basic]
         displayName: send-message-batch
         description: Delivers up to 10 messages to the specified queue. This is a batch version of Send Message.
         body:
@@ -290,6 +316,7 @@ protocols:
   
   /create-topic:
     post:
+      securedBy: [basic]
       displayName: create-topic
       description: The CreateTopic action creates a topic to which notifications can be published. Users can create at most 100 topics. 
       body:
@@ -303,6 +330,7 @@ protocols:
   
   /delete-topic:
     delete:
+      securedBy: [basic]
       displayName: delete-topic
       description: The DeleteTopic action deletes a topic and all its subscriptions.
       body:
@@ -315,6 +343,7 @@ protocols:
                 example: !include /examples/DeleteTopicResponseExample.json
   /get-topic-attributes:
     get:
+      securedBy: [basic]
       displayName: get-topic-attributes
       description: The GetTopicAttributes action returns all of the properties of a topic. 
       body:
@@ -328,6 +357,7 @@ protocols:
 
   /subscribe-topic:
     post:
+      securedBy: [basic]
       displayName: subscribe-topic
       description: The Subscribe action prepares to subscribe an endpoint by sending the endpoint a confirmation message.
       body:
@@ -341,6 +371,7 @@ protocols:
 
   /list-subscriptions-by-topic:
     get:
+      securedBy: [basic]
       displayName: list-subscriptions-by-topic
       description: The SubscriptionsByTopic action returns a list of the subscriptions to a specific topic
       body:
@@ -355,6 +386,7 @@ protocols:
   /reprocess:
     /salesorder-customer:
       get:
+        securedBy: [basic]
         displayName: reprocess-dlq
         description: performs redrive/reprocessing of retryable/non retryable messages to source queues
         queryParameters:
@@ -369,6 +401,7 @@ protocols:
                   example: !include /examples/ReprocessDlqResponseExample.json
     /returnorder-item-ext:
       get:
+        securedBy: [basic]
         displayName: reprocess-dlq
         description: performs redrive/reprocessing of retryable/non retryable messages to source queues
         queryParameters:
@@ -383,6 +416,7 @@ protocols:
                   example: !include /examples/ReprocessDlqResponseExample.json
     /purchaseorder:
       get:
+        securedBy: [basic]
         displayName: reprocess-dlq
         description: performs redrive/reprocessing of retryable/non retryable messages to source queues
         queryParameters:

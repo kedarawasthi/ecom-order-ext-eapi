@@ -41,8 +41,8 @@
 						<objectStoreV2>true</objectStoreV2>
 						<properties>
 							<env>${env}</env>
-							<anypoint.clientId>${anypoint.clientId}</anypoint.clientId>
-							<anypoint.clientSecret>${anypoint.clientSecret}</anypoint.clientSecret>
+							<anypoint.platform.client_id>${anypoint.platform.client_id}</anypoint.platform.client_id>
+							<anypoint.platform.client_secret>${anypoint.platform.client_secret}</anypoint.platform.client_secret>
 							<key>${key}</key>
 						</properties>
 					</cloudHubDeployment>
